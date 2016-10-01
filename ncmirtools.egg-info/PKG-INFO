@@ -1,0 +1,59 @@
+Metadata-Version: 1.1
+Name: ncmirtools
+Version: 0.1.0
+Summary: Set of filesystem commandline tools for NCMIR
+Home-page: https://github.com/coleslaw481/ncmirtools
+Author: Christopher Churas
+Author-email: churas.camera@gmail.com
+License: UNKNOWN
+Description: ===============================
+        ncmirtools
+        ===============================
+        
+        
+        
+        .. image:: https://pyup.io/repos/github/coleslaw481/ncmirtools/shield.svg
+             :target: https://pyup.io/repos/github/coleslaw481/ncmirtools/
+             :alt: Updates
+        
+        
+        Set of commandline too
+        
+        
+        
+        Features
+        --------
+        
+        * TODO
+        
+        Credits
+        ---------
+        
+        This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+        
+        .. _Cookiecutter: https://github.com/audreyr/cookiecutter
+        .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+        
+        
+        
+        =======
+        History
+        =======
+        
+        0.1.0 (2016-09-30)
+        ------------------
+        
+        * First release on PyPI.
+        
+Keywords: ncmirtools
+Platform: UNKNOWN
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
