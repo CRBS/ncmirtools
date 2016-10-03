@@ -1,0 +1,12 @@
+*.pyc
+*.egg-info
+*.egg
+.eggs/
+*.pyo
+*.swp
+.idea/workspace.xml
+.tox/
+dist/
+htmlcov/
+.coverage
+build/
