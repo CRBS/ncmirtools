@@ -29,7 +29,9 @@ Requirements
 
 To Build
 --------
+
 ::
+
   git clone https://github.com/slash-segmentation/ncmirtools.git
   cd ncmirtools
   # if make is available
