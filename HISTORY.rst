@@ -2,7 +2,7 @@
 History
 =======
 
-0.1.0 (2016-09-30)
+0.1.0 (2016-10-04)
 ------------------
 
-* First release on PyPI.
+* Initial release with single script mpidir.py
