@@ -16,7 +16,7 @@ Set of commandline tools simplify interaction with the NCMIR CCDB/CIL data repos
 Features
 --------
 
-* mpidir.py -- Given a Microscopy product id, this script finds the path on the filesystem
+* **mpidir.py** -- Given a Microscopy product id, this script finds the path on the filesystem
 
 
 Requirements
