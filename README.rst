@@ -26,6 +26,23 @@ Requirements
 * Argparse
 * Tested on Linux distributions
 
+
+To Build
+--------
+::
+  git clone https://github.com/slash-segmentation/ncmirtools.git
+  cd ncmirtools
+  # if make is available
+  make test
+  make dist
+
+  # if make is NOT available
+  # python setup.py test
+  # python setup.py bdist_wheel
+
+  pip install dist/ncmirtools-*-py2.py3-none-any.whl
+
+
 License
 -------
 
