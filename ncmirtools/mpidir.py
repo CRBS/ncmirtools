@@ -61,8 +61,8 @@ def _parse_arguments(desc, args):
 
     parser.add_argument('--prefixdir',
                         default=DirectoryForMicroscopyProductId.PROJECT_DIR,
-                        help='Defines the search path. Normally this does not'
-                             'need to be adjust. This script converts '
+                        help='Defines the search path. Normally this does not '
+                             'need to be adjusted. This script converts '
                              '<VOLUME_ID> and <PROJECT_ID> into wildcards '
                              'which can be any value and <MP_ID> is the '
                              'value that will be matched to the mpid value '
