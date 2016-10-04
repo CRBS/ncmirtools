@@ -24,7 +24,7 @@ setup(
     long_description=readme + '\n\n' + history,
     author="Christopher Churas",
     author_email='churas.camera@gmail.com',
-    url='https://github.com/coleslaw481/ncmirtools',
+    url='https://github.com/slash-segmentation/ncmirtools',
     packages=[
         'ncmirtools',
     ],
