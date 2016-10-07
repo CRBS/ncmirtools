@@ -4,8 +4,8 @@ ncmirtools
 
 
 
-.. image:: https://pyup.io/repos/github/slash-segmentation/ncmirtools/shield.svg
-     :target: https://pyup.io/repos/github/slash-segmentation/ncmirtools/
+.. image:: https://pyup.io/repos/github/CRBS/ncmirtools/shield.svg
+     :target: https://pyup.io/repos/github/CRBS/ncmirtools/
      :alt: Updates
 
 .. image:: https://travis-ci.org/CRBS/ncmirtools.svg?branch=master
@@ -34,7 +34,7 @@ To Build
 
 ::
 
-  git clone https://github.com/slash-segmentation/ncmirtools.git
+  git clone https://github.com/CRBS/ncmirtools.git
   cd ncmirtools
   # if make is available
   make test
