@@ -11,6 +11,9 @@ ncmirtools
 .. image:: https://travis-ci.org/CRBS/ncmirtools.svg?branch=master
        :target: https://travis-ci.org/CRBS/ncmirtools
 
+.. image:: https://coveralls.io/repos/github/CRBS/ncmirtools/badge.svg?branch=master
+       :target: https://coveralls.io/github/CRBS/ncmirtools?branch=master
+
 Set of commandline tools simplify interaction with the NCMIR CCDB/CIL data repository
 
 
