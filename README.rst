@@ -8,6 +8,8 @@ ncmirtools
      :target: https://pyup.io/repos/github/slash-segmentation/ncmirtools/
      :alt: Updates
 
+.. image:: https://travis-ci.org/CRBS/ncmirtools.svg?branch=master
+       :target: https://travis-ci.org/CRBS/ncmirtools
 
 Set of commandline tools simplify interaction with the NCMIR CCDB/CIL data repository
 
