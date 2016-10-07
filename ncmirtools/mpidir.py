@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import os
 import sys
 import argparse
 import ncmirtools
@@ -86,10 +87,10 @@ def _run_lookup(prefixdir, mpid):
         mp_dirs = dmp.get_directory_for_microscopy_product_id(mpid)
         if len(mp_dirs) > 0:
             for entry in mp_dirs:
-                print entry
+                sys.stdout.write(entry + os.linesep)
             return 0
 
-        sys.stderr.write(DIR_NOT_FOUND_MSG + '\n')
+        sys.stderr.write(DIR_NOT_FOUND_MSG + os.linesep)
         return 1
     except Exception:
         logger.exception("Error caught exception")
