@@ -16,8 +16,8 @@ ncmirtools
        :target: https://coveralls.io/github/CRBS/ncmirtools?branch=master
 
 .. image:: https://www.quantifiedcode.com/api/v1/project/1de1625cc49e4488b0fbd719cbfa0901/badge.svg
-     :target: https://www.quantifiedcode.com/app/project/1de1625cc49e4488b0fbd719cbfa0901
-  :alt: Code issues
+       :target: https://www.quantifiedcode.com/app/project/1de1625cc49e4488b0fbd719cbfa0901
+       :alt: Code issues
 
 Set of commandline tools for interaction with data hosted internally at NCMIR_.
 
