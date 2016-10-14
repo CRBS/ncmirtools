@@ -2,6 +2,8 @@
 ncmirtools
 ===============================
 
+.. image:: https://img.shields.io/pypi/v/ncmirtools.svg
+     :target: https://pypi.python.org/pypi/ncmirtools
 
 .. image:: https://pyup.io/repos/github/crbs/ncmirtools/shield.svg
      :target: https://pyup.io/repos/github/crbs/ncmirtools/
