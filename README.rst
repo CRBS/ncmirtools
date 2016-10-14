@@ -3,7 +3,6 @@ ncmirtools
 ===============================
 
 
-
 .. image:: https://pyup.io/repos/github/CRBS/ncmirtools/shield.svg
      :target: https://pyup.io/repos/github/CRBS/ncmirtools/
      :alt: Updates
@@ -14,22 +13,30 @@ ncmirtools
 .. image:: https://coveralls.io/repos/github/CRBS/ncmirtools/badge.svg?branch=master
        :target: https://coveralls.io/github/CRBS/ncmirtools?branch=master
 
-Set of commandline tools to simplify interaction with NCMIR_ systems.  For more information please visit our wiki page: 
+Set of commandline tools for interaction with data hosted internally at NCMIR_.
+
+For more information please visit our wiki page: 
 
 https://github.com/CRBS/ncmirtools/wiki
 
 
-
-Features
---------
+Tools
+-----
 
 * **mpidir.py** -- Given a Microscopy product id, this script finds the path on the filesystem
+
+
+Dependencies
+-----------
+
+* `Argparse <https://pypi.python.org/pypi/argparse>`_
 
 
 Compatibility
 -------------
 
 * Should work on Python 2.6 & 2.7 on Linux distributions
+
 
 Installation
 ------------
@@ -42,15 +49,18 @@ Try one of these:
 
   python setup.py install
 
+
 License
 -------
 
 See LICENSE.txt_
 
+
 Bugs
 ----
 
 Please report them `here <https://github.com/CRBS/ncmirtools/issues>`_
+
 
 Credits
 ---------
