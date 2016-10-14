@@ -3,8 +3,8 @@ ncmirtools
 ===============================
 
 
-.. image:: https://pyup.io/repos/github/CRBS/ncmirtools/shield.svg
-     :target: https://pyup.io/repos/github/CRBS/ncmirtools/
+.. image:: https://pyup.io/repos/github/crbs/ncmirtools/shield.svg
+     :target: https://pyup.io/repos/github/crbs/ncmirtools/
      :alt: Updates
 
 .. image:: https://travis-ci.org/CRBS/ncmirtools.svg?branch=master
