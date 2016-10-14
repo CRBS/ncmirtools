@@ -4,7 +4,7 @@ ncmirtools
 
 .. image:: https://img.shields.io/pypi/v/ncmirtools.svg
      :target: https://pypi.python.org/pypi/ncmirtools
-
+     :alt: Pypi 
 .. image:: https://pyup.io/repos/github/crbs/ncmirtools/shield.svg
      :target: https://pyup.io/repos/github/crbs/ncmirtools/
      :alt: Updates
@@ -14,6 +14,10 @@ ncmirtools
 
 .. image:: https://coveralls.io/repos/github/CRBS/ncmirtools/badge.svg?branch=master
        :target: https://coveralls.io/github/CRBS/ncmirtools?branch=master
+
+.. image:: https://www.quantifiedcode.com/api/v1/project/1de1625cc49e4488b0fbd719cbfa0901/badge.svg
+     :target: https://www.quantifiedcode.com/app/project/1de1625cc49e4488b0fbd719cbfa0901
+  :alt: Code issues
 
 Set of commandline tools for interaction with data hosted internally at NCMIR_.
 
