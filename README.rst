@@ -27,7 +27,7 @@ Tools
 
 
 Dependencies
------------
+------------
 
 * `Argparse <https://pypi.python.org/pypi/argparse>`_
 
@@ -57,7 +57,7 @@ See LICENSE.txt_
 
 
 Bugs
-----
+-----
 
 Please report them `here <https://github.com/CRBS/ncmirtools/issues>`_
 
