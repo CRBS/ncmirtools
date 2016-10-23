@@ -10,11 +10,13 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    "argparse"
+    "argparse",
+    "pg8000"
 ]
 
 test_requirements = [
-    "argparse"
+    "argparse",
+    "pg8000"
 ]
 
 setup(
@@ -44,7 +46,8 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
-    scripts = [ 'ncmirtools/mpidir.py'
+    scripts = [ 'ncmirtools/mpidir.py',
+                'ncmirtools/projectsearch.py'
               ],
     test_suite='tests',
     tests_require=test_requirements
