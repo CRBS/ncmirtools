@@ -4,7 +4,9 @@
 import os
 import logging
 import re
+import pg8000
 
+from ncmirtools.config import NcmirToolsConfig
 
 logger = logging.getLogger(__name__)
 
@@ -163,3 +165,83 @@ class DirectoryForMicroscopyProductId(object):
         except OSError:
             logger.exception('Caught Exception')
         return matching_dirs
+
+class ProjectSearchViaDatabase(object):
+    """Searches for Projects via Database
+    """
+
+    def __init__(self, config):
+        """Constructor
+        :param config: ConfigParser object with information to connect to
+                       database.
+        """
+        self._config = config
+        self._alt_conn = None
+
+    def set_config(self, config):
+        """Sets alternate config
+        :param config: ConfigParser object with information to connect to
+                       database.
+        """
+        self._config = config
+
+    def set_alternate_connection(self, conn):
+        """Sets alternate database connection
+        :param conn: Alternate database connection
+        """
+        self._alt_conn = conn
+
+    def _get_connection(self):
+        """Gets connection to database
+        :returns: Connection to database as Connection object
+        """
+        if self._alt_conn is not None:
+            logger.info("Using alternate database connection")
+            return self._alt_conn
+
+        userval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
+                                NcmirToolsConfig.POSTGRES_USER)
+
+        passval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
+                                   NcmirToolsConfig.POSTGRES_PASS)
+
+        hostval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
+                                             NcmirToolsConfig.POSTGRES_HOST)
+
+        portval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
+                                NcmirToolsConfig.POSTGRES_PORT)
+
+        dbval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
+                                NcmirToolsConfig.POSTGRES_DB)
+
+        conn = pg8000.connect(host=hostval, user=userval,
+                              password=passval,
+                              port=int(portval),
+                              database=dbval)
+        return conn
+
+    def get_matching_projects(self, keyword):
+        """Finds projects matching keyword
+        :param keyword: Keyword to use to search for projects
+        :returns: list of strings containing project id followed by project
+                  name.  Ex: 20333    some project
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        try:
+            if keyword is None:
+                cursor.execute("SELECT Project_id,project_name FROM Project")
+            else:
+                cursor.execute("SELECT Project_id,project_name FROM Project "
+                               "WHERE project_name ILIKE '%%" + keyword + "%%' OR "
+                               " project_desc ILIKE '%%" + keyword + "%%'")
+
+                res = []
+                for tuple in cursor.fetchall():
+                    res.append(str(tuple[0]) + '    ' + str(tuple[1]))
+        finally:
+            cursor.close()
+            conn.commit()
+            conn.close()
+
+        return res
