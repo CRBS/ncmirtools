@@ -16,7 +16,8 @@ requirements = [
 
 test_requirements = [
     "argparse",
-    "pg8000"
+    "pg8000",
+    "mock"
 ]
 
 setup(
