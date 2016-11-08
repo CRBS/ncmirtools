@@ -8,6 +8,7 @@ import logging
 
 from ncmirtools.lookup import ProjectSearchViaDatabase
 from ncmirtools.config import NcmirToolsConfig
+from ncmirtools.config import ConfigMissingError
 
 LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
@@ -84,12 +85,19 @@ def _run_search_database(keyword):
 
         sys.stderr.write(NO_PROJECTS_FOUND_MSG + os.linesep)
         return 1
+    except ConfigMissingError:
+        logger.exception('Configuration file is missing')
+        sys.stderr.write('\nPlease run projectsearch.py --help for '
+                         'information on how to create a configuration '
+                         'file\n\n')
+        return 3
     except Exception:
         logger.exception("Error caught exception")
         return 2
 
 
 def main():
+    config = NcmirToolsConfig()
     desc = """
               Version {version}
 
@@ -100,12 +108,16 @@ def main():
 
               <project id> <project name>
 
-              If no project matches the <keyword> is found this program will output
-              to standard error the message '{projectnotfound}' and
+              If no project matches the <keyword> is found this program will
+              output to standard error the message '{projectnotfound}' and
               exit with value 1.
 
-              If there is an error this program will output a message and
-              exit with value 2.
+              If there is an unknown error this program will output a message
+              and exit with value 2.
+
+              If {config_file}
+              is missing then this program will output a message and exit
+              with value 3.
 
               Example Usage:
 
@@ -113,8 +125,31 @@ def main():
               2033 yo project
               2047 you better believe it
 
+              NOTE:
+
+              This script requires a configuration file which contains
+              the information to connect to the database.
+
+              The file should located here: {config_file}
+
+              and should have the following format:
+
+              [{db}]
+              {user} = <database username>
+              {password} = <database password>
+              {port} = <database port ie 5432>
+              {host} = <database host>
+              {database} = <database name>
+
               """.format(version=ncmirtools.__version__,
-                         projectnotfound=NO_PROJECTS_FOUND_MSG)
+                         projectnotfound=NO_PROJECTS_FOUND_MSG,
+                         db=NcmirToolsConfig.POSTGRES_SECTION,
+                         user=NcmirToolsConfig.POSTGRES_USER,
+                         password=NcmirToolsConfig.POSTGRES_PASS,
+                         port=NcmirToolsConfig.POSTGRES_PORT,
+                         host=NcmirToolsConfig.POSTGRES_HOST,
+                         database=NcmirToolsConfig.POSTGRES_DB,
+                         config_file=config.get_config_file())
 
     theargs = _parse_arguments(desc, sys.argv[1:])
     theargs.program = sys.argv[0]
