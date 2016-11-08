@@ -92,9 +92,9 @@ def _run_search_database(keyword, homedir):
         sys.stderr.write(NO_PROJECTS_FOUND_MSG + os.linesep)
         return 1
     except ConfigMissingError:
-        logger.exception('Configuration file is missing')
-        sys.stderr.write('\nPlease run projectsearch.py --help for '
-                         'information on how to create a configuration '
+        sys.stderr.write('\nERROR: Configuration file missing.\n'
+                         ' Please run projectsearch.py --help for '
+                         'information on how\n to create a configuration '
                          'file\n\n')
         return 3
     except Exception:
@@ -109,10 +109,11 @@ def main():
 
               Given a <keyword> this script searches the database for any
               projects where the keyword exists in the project name or
-              description. The matching projects will be output
-              separated by new line characters as follows:
+              description. The search is case insensitive. The matching
+              projects will be output separated by new line characters
+              as follows:
 
-              <project id> <project name>
+              <project id>   <project name>
 
               If no project matches the <keyword> is found this program will
               output to standard error the message '{projectnotfound}'
