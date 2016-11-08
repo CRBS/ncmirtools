@@ -76,9 +76,13 @@ docs: ## generate Sphinx HTML documentation, including API docs
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
 
+testrelease: clean ## package and uploada  test release
+	python setup.py sdist upload -r pypitest
+	python setup.py bdist_wheel upload -r pypitest
+
 release: clean ## package and upload a release
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+	python setup.py sdist upload -r pypi
+	python setup.py bdist_wheel upload -r pypi
 
 dist: clean ## builds source and wheel package
 	python setup.py sdist
