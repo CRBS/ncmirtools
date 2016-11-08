@@ -9,6 +9,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class ConfigMissingError(Exception):
+    """Raised if configuration file is missing
+    """
+    pass
+
+
 class NcmirToolsConfig(object):
     """Class provides access to ncmirtools configuration
     file which is stored in the user's home directory
@@ -51,10 +57,11 @@ class NcmirToolsConfig(object):
         """Gets configparser object loaded with configuration
         :returns output of configparser.ConfigParser() after it has been
                  loaded with configuration from `get_config_file()`
+        :raises ConfigMissingError: If no configuration file is found
         """
         if not os.path.isfile(self.get_config_file()):
-            logger.warning('Configuration is not a file')
-            return configparser.ConfigParser()
+            raise ConfigMissingError('No configuration file found here: ' +
+                                     self.get_config_file())
 
         parser = configparser.ConfigParser()
         parser.read(self.get_config_file())

@@ -14,8 +14,8 @@ import sys
 import unittest
 import os
 import configparser
-from configparser import NoSectionError
 
+from ncmirtools.config import ConfigMissingError
 from ncmirtools.config import NcmirToolsConfig
 
 
@@ -50,14 +50,15 @@ class TestConfig(unittest.TestCase):
         try:
             con = NcmirToolsConfig()
             con.set_home_directory(temp_dir)
-            config = con.get_config()
+
             try:
-                config.get(NcmirToolsConfig.POSTGRES_SECTION,
-                           NcmirToolsConfig.POSTGRES_USER)
-                self.fail('Expected NoSectionError')
-            except NoSectionError as e:
+                config = con.get_config()
+                self.fail('Expected ConfigMissingError')
+            except ConfigMissingError as e:
                 self.assertEqual(str(e),
-                                 'No section: \'postgres\'')
+                                 'No configuration file found here: ' +
+                                 os.path.join(temp_dir,
+                                              con.get_config_file()))
         finally:
             shutil.rmtree(temp_dir)
 
