@@ -23,8 +23,15 @@ class InvalidMicroscopyProductIdError(Exception):
     pass
 
 
-class DirectoryForMicroscopyProductId(object):
-    """Given a microscopy product id instances of this class
+class InvalidProjectIdError(Exception):
+    """Raised when Project Id passed in is invalid
+    """
+    pass
+
+
+class DirectoryForId(object):
+    """Given a microscopy product id or project id
+       instances of this class
        find corresponding directory on the filesystem
     """
     VOLUME_ID = '<VOLUME_ID>'
@@ -56,11 +63,11 @@ class DirectoryForMicroscopyProductId(object):
                                            'constructor cannot be None')
 
         splitpath = re.split('^(.*)' +
-                             DirectoryForMicroscopyProductId.VOLUME_ID +
+                             DirectoryForId.VOLUME_ID +
                              '(.*)' +
-                             DirectoryForMicroscopyProductId.PROJECT_ID +
+                             DirectoryForId.PROJECT_ID +
                              '(.*)' +
-                             DirectoryForMicroscopyProductId.MP_ID,
+                             DirectoryForId.MP_ID,
                              self._search_path)
 
         if len(splitpath) < 4:
@@ -115,6 +122,37 @@ class DirectoryForMicroscopyProductId(object):
 
         return final_matches
 
+    def get_directory_for_project_id(self, projectid):
+        """Gets directory for projectid id `projectid`
+        :param projectid: microscopy product id ie 2080
+        :returns: List of directories that match `projectid`
+        """
+        if projectid is None:
+            raise InvalidProjectIdError('project id cannot be None')
+
+        basedir = os.path.dirname(self._volpath)
+        dirprefix = os.path.basename(self._volpath)
+        match_vol_dirs = self._get_matching_directories(basedir,
+                                                        dirprefix)
+        logger.debug('vol dir count ' + str(len(match_vol_dirs)))
+        project_dir_count = 0
+        mp_dir_count = 0
+        final_matches = []
+        for vol_dir in match_vol_dirs:
+            raw_prj_dir = os.path.join(vol_dir, self._projpath)
+            basedir = os.path.dirname(raw_prj_dir)
+            dirprefix = os.path.basename(raw_prj_dir + str(projectid))
+            match_prj_dirs = self._get_matching_directories(basedir,
+                                                            dirprefix,
+                                                            exactmatch=True)
+            project_dir_count += len(match_prj_dirs)
+            if len(match_prj_dirs) > 0:
+                final_matches.extend(match_prj_dirs)
+
+        logger.debug('project dir count ' + str(project_dir_count))
+
+        return final_matches
+
     def _get_matching_directories(self, basedir, prefix,
                                   exactmatch=False):
         """Gets list of directories under `basedir` matching `prefix`
@@ -165,6 +203,7 @@ class DirectoryForMicroscopyProductId(object):
         except OSError:
             logger.exception('Caught Exception')
         return matching_dirs
+
 
 class ProjectSearchViaDatabase(object):
     """Searches for Projects via Database

@@ -16,7 +16,7 @@ import shutil
 import unittest
 
 from ncmirtools import mpidir
-from ncmirtools.lookup import DirectoryForMicroscopyProductId
+from ncmirtools.lookup import DirectoryForId
 
 
 class TestMpidir(unittest.TestCase):
@@ -81,13 +81,13 @@ class TestMpidir(unittest.TestCase):
 
         # test with non matching mpid
         self.assertEqual(mpidir._run_lookup(
-            DirectoryForMicroscopyProductId.PROJECT_DIR, 'doesnotexistxx'), 1)
+            DirectoryForId.PROJECT_DIR, 'doesnotexistxx'), 1)
 
         # test with a match
         temp_dir = tempfile.mkdtemp()
         try:
             pdir = re.sub('^/', '',
-                          DirectoryForMicroscopyProductId.PROJECT_DIR)
+                          DirectoryForId.PROJECT_DIR)
             mpdir = os.path.join(temp_dir, 'ccdbprod', 'ccdbprod1',
                                  'home', 'CCDB_DATA_USER.portal',
                                  'CCDB_DATA_USER', 'acquisition',

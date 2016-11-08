@@ -14,7 +14,7 @@ import sys
 import re
 import unittest
 
-from ncmirtools.lookup import DirectoryForMicroscopyProductId
+from ncmirtools.lookup import DirectoryForId
 from ncmirtools.lookup import DirectorySearchPathError
 from ncmirtools.lookup import InvalidMicroscopyProductIdError
 
@@ -31,7 +31,7 @@ class TestLookup(unittest.TestCase):
 
         # try passing none to constructor
         try:
-            DirectoryForMicroscopyProductId(None)
+            DirectoryForId(None)
             self.fail('Expected DirectorySearchPathError')
         except DirectorySearchPathError as e:
             self.assertEqual(str(e),
@@ -42,7 +42,7 @@ class TestLookup(unittest.TestCase):
         bad_path = '/c/<VOLUME_ID>/<PROJECT_ID>/hi'
         try:
 
-            DirectoryForMicroscopyProductId(bad_path)
+            DirectoryForId(bad_path)
             self.fail('Expected DirectorySearchPathError')
         except DirectorySearchPathError as e:
             self.assertEqual(str(e),
@@ -50,15 +50,15 @@ class TestLookup(unittest.TestCase):
                              'constructor : ' + bad_path)
 
         # try valid path
-        DirectoryForMicroscopyProductId(
-            DirectoryForMicroscopyProductId.PROJECT_DIR)
+        DirectoryForId(
+            DirectoryForId.PROJECT_DIR)
 
     def test__get_matching_directories(self):
         temp_dir = tempfile.mkdtemp()
         try:
             # try Passing None as arguments
-            dmp = DirectoryForMicroscopyProductId(
-                DirectoryForMicroscopyProductId.PROJECT_DIR)
+            dmp = DirectoryForId(
+                DirectoryForId.PROJECT_DIR)
             self.assertEqual(len(dmp._get_matching_directories(None, None)),
                              0)
             self.assertEqual(len(dmp._get_matching_directories(temp_dir,
@@ -137,10 +137,10 @@ class TestLookup(unittest.TestCase):
         try:
             # TODO: Make re.sub platform agnostic
             pdir = re.sub('^/', '',
-                          DirectoryForMicroscopyProductId.PROJECT_DIR)
+                          DirectoryForId.PROJECT_DIR)
 
             sp = os.path.join(temp_dir, pdir)
-            dmp = DirectoryForMicroscopyProductId(sp)
+            dmp = DirectoryForId(sp)
 
             # test mpid is None
             try:
