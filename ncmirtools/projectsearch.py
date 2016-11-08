@@ -80,7 +80,7 @@ def _run_search_database(keyword, homedir):
     """
     try:
         config = NcmirToolsConfig()
-        config.set_home_directory(homedir)
+        config.set_home_directory(os.path.expanduser(homedir))
 
         search = ProjectSearchViaDatabase(config.get_config())
         res = search.get_matching_projects(keyword)
@@ -115,8 +115,8 @@ def main():
               <project id> <project name>
 
               If no project matches the <keyword> is found this program will
-              output to standard error the message '{projectnotfound}' and
-              exit with value 1.
+              output to standard error the message '{projectnotfound}'
+              and exit with value 1.
 
               If there is an unknown error this program will output a message
               and exit with value 2.
@@ -136,7 +136,8 @@ def main():
               This script requires a configuration file which contains
               the information to connect to the database.
 
-              The file should located here: {config_file}
+              For this account the file should be located here:
+              {config_file}
 
               and should have the following format:
 
