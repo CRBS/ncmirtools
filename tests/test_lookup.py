@@ -17,6 +17,8 @@ import unittest
 from ncmirtools.lookup import DirectoryForId
 from ncmirtools.lookup import DirectorySearchPathError
 from ncmirtools.lookup import InvalidMicroscopyProductIdError
+from ncmirtools.lookup import InvalidProjectIdError
+
 
 
 class TestLookup(unittest.TestCase):
@@ -27,7 +29,7 @@ class TestLookup(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_DirectoryForMicroscopyProductId_constructor(self):
+    def test_DirectoryForId_constructor(self):
 
         # try passing none to constructor
         try:
@@ -197,6 +199,70 @@ class TestLookup(unittest.TestCase):
 
             res = dmp.get_directory_for_microscopy_product_id(4)
             self.assertEqual(len(res), 90)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_directory_for_project_id(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # TODO: Make re.sub platform agnostic
+            pdir = re.sub('^/', '',
+                          DirectoryForId.PROJECT_DIR)
+
+            sp = os.path.join(temp_dir, pdir)
+            dmp = DirectoryForId(sp)
+
+            # test mpid is None
+            try:
+                dmp.get_directory_for_project_id(None)
+                self.fail('Expected InvalidProjectIdError')
+            except InvalidProjectIdError as e:
+                self.assertEqual(str(e), 'project id cannot be '
+                                         'None')
+
+            # try on empty dir
+            res = dmp.get_directory_for_project_id(12345)
+            self.assertEqual(len(res), 0)
+
+            # TODO: Make path platform agnostic
+            # try with 1 volume and no project
+            volone = os.path.join(temp_dir, 'ccdbprod/ccdbprod1')
+            os.makedirs(volone)
+            res = dmp.get_directory_for_project_id(12345)
+            self.assertEqual(len(res), 0)
+
+            # TODO: Make path platform agnostic
+            # try with 1 volume, 1 project
+            projone = os.path.join(volone, 'home/CCDB_DATA_USER.portal/'
+                                           'CCDB_DATA_USER/acquisition/'
+                                           'project_12345')
+            os.makedirs(projone)
+            res = dmp.get_directory_for_project_id(12345)
+            self.assertEqual(len(res), 1)
+            self.assertTrue(projone in res)
+
+            # TODO: Make path platform agnostic
+            # try with multiple volumes, projects
+            for val in range(2, 20, 1):
+                avol = os.path.join(temp_dir, 'ccdbprod/ccdbprod' + str(val))
+                os.makedirs(avol)
+                for prj in range(300000, 300005, 1):
+                    aprj = os.path.join(avol,
+                                        'home/CCDB_DATA_USER.portal/'
+                                        'CCDB_DATA_USER/acquisition/'
+                                        'project_' + str(prj))
+                    os.makedirs(aprj)
+                    for mp in range(1, 5, 1):
+                        ampid = os.path.join(aprj, 'microscopy_' + str(mp))
+                        os.makedirs(ampid)
+            res = dmp.get_directory_for_project_id(12345)
+            self.assertEqual(len(res), 1)
+            self.assertTrue(projone in res)
+
+            res = dmp.get_directory_for_project_id(300000)
+            self.assertEqual(len(res), 18)
+
 
         finally:
             shutil.rmtree(temp_dir)
