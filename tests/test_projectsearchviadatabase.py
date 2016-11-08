@@ -7,11 +7,8 @@ test_projectsearchviadatabase
 
 Tests for `ProjectSearchViaDatabase` class.
 """
-import os
-import shutil
-import tempfile
+
 import sys
-import re
 import unittest
 from mock import Mock
 import configparser
@@ -19,7 +16,6 @@ from pg8000 import InterfaceError
 
 from ncmirtools.lookup import ProjectSearchViaDatabase
 from ncmirtools.config import NcmirToolsConfig
-
 
 
 class TestProjectSearchViaDatabase(unittest.TestCase):
@@ -70,7 +66,8 @@ class TestProjectSearchViaDatabase(unittest.TestCase):
         ps.set_alternate_connection(mockcon)
         res = ps.get_matching_projects(None)
 
-        mcursor.execute.assert_called_with("SELECT Project_id,project_name FROM Project")
+        mcursor.execute.assert_called_with("SELECT Project_id,"
+                                           "project_name FROM Project")
         mcursor.close.assert_called_once_with()
         mockcon.commit.assert_called_once_with()
         mockcon.close.assert_called_once_with()
@@ -81,15 +78,18 @@ class TestProjectSearchViaDatabase(unittest.TestCase):
 
         mockcon = Mock()
         mcursor = Mock()
-        mcursor.fetchall = Mock(return_value=[(1, 'koo'), (3, 'yo'), ('4', 'val val')])
+        mcursor.fetchall = Mock(return_value=[(1, 'koo'), (3, 'yo'),
+                                              ('4', 'val val')])
         mockcon.cursor = Mock(return_value=mcursor)
 
         ps.set_alternate_connection(mockcon)
         res = ps.get_matching_projects('ha ha')
 
-        mcursor.execute.assert_called_with("SELECT Project_id,project_name FROM Project "
-                               "WHERE project_name ILIKE '%%ha ha%%' OR "
-                               " project_desc ILIKE '%%ha ha%%'")
+        mcursor.execute.assert_called_with("SELECT Project_id,project_name "
+                                           "FROM Project "
+                                           "WHERE project_name ILIKE "
+                                           "'%%ha ha%%' OR "
+                                           " project_desc ILIKE '%%ha ha%%'")
         mcursor.close.assert_called_once_with()
         mockcon.commit.assert_called_once_with()
         mockcon.close.assert_called_once_with()

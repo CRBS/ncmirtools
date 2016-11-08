@@ -20,7 +20,6 @@ from ncmirtools.lookup import InvalidMicroscopyProductIdError
 from ncmirtools.lookup import InvalidProjectIdError
 
 
-
 class TestLookup(unittest.TestCase):
 
     def setUp(self):
@@ -262,7 +261,6 @@ class TestLookup(unittest.TestCase):
 
             res = dmp.get_directory_for_project_id(300000)
             self.assertEqual(len(res), 18)
-
 
         finally:
             shutil.rmtree(temp_dir)

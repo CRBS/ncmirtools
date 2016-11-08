@@ -41,7 +41,8 @@ def _setup_logging(theargs):
     logger.setLevel(theargs.numericloglevel)
     logging.basicConfig(format=theargs.logformat)
 
-    logging.getLogger('ncmirtools.projectdir').setLevel(theargs.numericloglevel)
+    logging.getLogger('ncmirtools.projectdir').\
+        setLevel(theargs.numericloglevel)
     logging.getLogger('ncmirtools.lookup').setLevel(theargs.numericloglevel)
 
 

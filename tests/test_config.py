@@ -7,7 +7,6 @@ test_lookup
 
 Tests for `lookup` module.
 """
-import os
 import shutil
 import tempfile
 import sys
@@ -52,7 +51,7 @@ class TestConfig(unittest.TestCase):
             con.set_home_directory(temp_dir)
 
             try:
-                config = con.get_config()
+                con.get_config()
                 self.fail('Expected ConfigMissingError')
             except ConfigMissingError as e:
                 self.assertEqual(str(e),

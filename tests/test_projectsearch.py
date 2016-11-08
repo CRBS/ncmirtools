@@ -7,12 +7,9 @@ test_lookup
 
 Tests for `lookup` module.
 """
-import re
-import os
+
 import sys
 import logging
-import tempfile
-import shutil
 import unittest
 
 from ncmirtools import projectsearch
@@ -67,7 +64,7 @@ class TestProjectdir(unittest.TestCase):
         self.assertEqual(pargs.homedir, '~')
 
         pargs = projectsearch._parse_arguments('hello', ['1xx', '--log',
-                                                  'DEBUG', '--homedir',
+                                                         'DEBUG', '--homedir',
                                                          'foo'])
         self.assertEqual(pargs.keyword, '1xx')
         self.assertEqual(pargs.loglevel, 'DEBUG')

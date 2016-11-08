@@ -136,7 +136,6 @@ class DirectoryForId(object):
                                                         dirprefix)
         logger.debug('vol dir count ' + str(len(match_vol_dirs)))
         project_dir_count = 0
-        mp_dir_count = 0
         final_matches = []
         for vol_dir in match_vol_dirs:
             raw_prj_dir = os.path.join(vol_dir, self._projpath)
@@ -239,19 +238,19 @@ class ProjectSearchViaDatabase(object):
             return self._alt_conn
 
         userval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
-                                NcmirToolsConfig.POSTGRES_USER)
+                                   NcmirToolsConfig.POSTGRES_USER)
 
         passval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
                                    NcmirToolsConfig.POSTGRES_PASS)
 
         hostval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
-                                             NcmirToolsConfig.POSTGRES_HOST)
+                                   NcmirToolsConfig.POSTGRES_HOST)
 
         portval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
-                                NcmirToolsConfig.POSTGRES_PORT)
+                                   NcmirToolsConfig.POSTGRES_PORT)
 
         dbval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
-                                NcmirToolsConfig.POSTGRES_DB)
+                                 NcmirToolsConfig.POSTGRES_DB)
 
         conn = pg8000.connect(host=hostval, user=userval,
                               password=passval,
@@ -273,7 +272,8 @@ class ProjectSearchViaDatabase(object):
                 cursor.execute("SELECT Project_id,project_name FROM Project")
             else:
                 cursor.execute("SELECT Project_id,project_name FROM Project "
-                               "WHERE project_name ILIKE '%%" + keyword + "%%' OR "
+                               "WHERE project_name ILIKE '%%" + keyword +
+                               "%%' OR "
                                " project_desc ILIKE '%%" + keyword + "%%'")
             for tuple in cursor.fetchall():
                 res.append(str(tuple[0]) + '    ' + str(tuple[1]))

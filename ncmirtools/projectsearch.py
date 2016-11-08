@@ -17,6 +17,7 @@ logger = logging.getLogger('ncmirtools.projectsearch')
 
 NO_PROJECTS_FOUND_MSG = 'No matching projects found'
 
+
 class Parameters(object):
     """Placeholder class for parameters
     """
@@ -43,7 +44,8 @@ def _setup_logging(theargs):
     logging.basicConfig(format=theargs.logformat)
 
     logging.getLogger('ncmirtools.config').setLevel(theargs.numericloglevel)
-    logging.getLogger('ncmirtools.projectsearch').setLevel(theargs.numericloglevel)
+    logging.getLogger('ncmirtools.projectsearch').\
+        setLevel(theargs.numericloglevel)
     logging.getLogger('ncmirtools.lookup').setLevel(theargs.numericloglevel)
 
 
@@ -56,7 +58,7 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=help_formatter)
     parser.add_argument("keyword", help='keyword to search for in name or '
-                                     ' description of project')
+                                        ' description of project')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level (default WARNING)",
@@ -107,13 +109,7 @@ def main():
     desc = """
               Version {version}
 
-              Given a <keyword> this script searches the database for any
-              projects where the keyword exists in the project name or
-              description. The search is case insensitive. The matching
-              projects will be output separated by new line characters
-              as follows:
-
-              <project id>   <project name>
+              git
 
               If no project matches the <keyword> is found this program will
               output to standard error the message '{projectnotfound}'

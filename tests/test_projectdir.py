@@ -68,8 +68,8 @@ class TestProjectdir(unittest.TestCase):
         self.assertTrue(pargs.prefixdir.startswith(os.sep + 'ccdbprod'))
 
         pargs = projectdir._parse_arguments('hello', ['1xx', '--log',
-                                                  'DEBUG', '--prefixdir',
-                                                  'hi'])
+                                                      'DEBUG', '--prefixdir',
+                                                      'hi'])
         self.assertEqual(pargs.projectid, '1xx')
         self.assertEqual(pargs.loglevel, 'DEBUG')
         self.assertEqual(pargs.prefixdir, 'hi')
@@ -93,8 +93,9 @@ class TestProjectdir(unittest.TestCase):
                                  'CCDB_DATA_USER', 'acquisition',
                                  'project_12345', 'microscopy_222')
             os.makedirs(mpdir)
-            self.assertEqual(projectdir._run_lookup(os.path.join(temp_dir, pdir),
-                                                '12345'), 0)
+            self.assertEqual(projectdir._run_lookup(os.path.join(temp_dir,
+                                                                 pdir),
+                                                    '12345'), 0)
         finally:
             shutil.rmtree(temp_dir)
 
