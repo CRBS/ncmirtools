@@ -267,6 +267,7 @@ class ProjectSearchViaDatabase(object):
         """
         conn = self._get_connection()
         cursor = conn.cursor()
+        res = []
         try:
             if keyword is None:
                 cursor.execute("SELECT Project_id,project_name FROM Project")
@@ -274,10 +275,8 @@ class ProjectSearchViaDatabase(object):
                 cursor.execute("SELECT Project_id,project_name FROM Project "
                                "WHERE project_name ILIKE '%%" + keyword + "%%' OR "
                                " project_desc ILIKE '%%" + keyword + "%%'")
-
-                res = []
-                for tuple in cursor.fetchall():
-                    res.append(str(tuple[0]) + '    ' + str(tuple[1]))
+            for tuple in cursor.fetchall():
+                res.append(str(tuple[0]) + '    ' + str(tuple[1]))
         finally:
             cursor.close()
             conn.commit()
