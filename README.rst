@@ -31,17 +31,23 @@ Tools
 
 * **mpidir.py** -- Given a Microscopy product id, this script finds the path on the filesystem
 
+* **projectdir.py** -- Given a project id, this script finds the path on the filesystem
+
+* **projectsearch.py** -- Allows caller to search database for projects
 
 Dependencies
 ------------
 
-* `Argparse <https://pypi.python.org/pypi/argparse>`_
+* `argparse <https://pypi.python.org/pypi/argparse>`_
 
+* `configparser <https://pypi.python.org/pypi/configparser>`_
+
+* `pg8000 <https://pypi.python.org/pypi/pg8000>`_
 
 Compatibility
 -------------
 
-* Should work on Python 2.6 & 2.7 on Linux distributions
+* Should work on Python 2.6, 2.7, 3.3, 3.4, & 3.5 on Linux distributions
 
 
 Installation
