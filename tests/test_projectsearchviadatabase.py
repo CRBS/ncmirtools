@@ -57,9 +57,7 @@ class TestProjectSearchViaDatabase(unittest.TestCase):
                       'postgres NOT to be running on localhost listening'
                       'on port 5')
         except InterfaceError as e:
-            self.assertEqual(str(e),
-                             "('communication error', "
-                             "error(111, 'Connection refused'))")
+            self.assertTrue(str(e).startswith("('communication error'"))
 
     def test_get_matching_projects_no_keyword(self):
         ps = ProjectSearchViaDatabase(configparser.ConfigParser())
