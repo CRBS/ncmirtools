@@ -24,7 +24,7 @@ test_requirements = [
 
 setup(
     name='ncmirtools',
-    version='0.1.1',
+    version='0.2.0',
     description="Set of commandline tools for NCMIR",
     long_description=readme + '\n\n' + history,
     author="Christopher Churas",
@@ -50,7 +50,8 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     scripts = [ 'ncmirtools/mpidir.py',
-                'ncmirtools/projectsearch.py'
+                'ncmirtools/projectsearch.py',
+                'ncmirtools/projectdir.py'
               ],
     test_suite='tests',
     tests_require=test_requirements
