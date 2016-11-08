@@ -61,13 +61,18 @@ def _parse_arguments(desc, args):
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level (default WARNING)",
                         default='WARNING')
+    parser.add_argument("--homedir", help='Sets alternate home directory'
+                                          'under which the ' +
+                                          NcmirToolsConfig.CONFIG_FILE +
+                                          ' is loaded (default ~)',
+                        default='~')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + ncmirtools.__version__))
 
     return parser.parse_args(args, namespace=parsed_arguments)
 
 
-def _run_search_database(keyword):
+def _run_search_database(keyword, homedir):
     """Performs search for directory
     :param prefixdir: Directory search path
     :param mpid: microcsopy product id to use to find directory
@@ -75,6 +80,7 @@ def _run_search_database(keyword):
     """
     try:
         config = NcmirToolsConfig()
+        config.set_home_directory(homedir)
 
         search = ProjectSearchViaDatabase(config.get_config())
         res = search.get_matching_projects(keyword)
@@ -156,7 +162,7 @@ def main():
     theargs.version = ncmirtools.__version__
     _setup_logging(theargs)
     try:
-        return _run_search_database(theargs.keyword)
+        return _run_search_database(theargs.keyword, theargs.homedir)
     finally:
         logging.shutdown()
 
