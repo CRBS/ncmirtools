@@ -307,3 +307,62 @@ class ProjectSearchViaDatabase(object):
             conn.close()
 
         return res
+
+
+class MicroscopyProduct(object):
+    """Represents a CIL/CCDB Microscopy Product
+    """
+    ID_KEYWORD = 'Id:'
+    IMAGE_BASENAME_KEYWORD = 'Image Basename:'
+    NOTES_KEYWORD = 'Notes:'
+
+    def __init__(self, id=None, image_basename=None,
+                 notes=None):
+        """Constructor
+        """
+        self._id = id
+        self._image_basename = image_basename
+        self._notes = notes
+        pass
+
+    def get_id(self):
+        """Gets id for microscopy product
+        :returns: microscopy product id
+        """
+        return self._id
+
+    def get_image_basename(self):
+        """Gets image basename for microscopy product
+        :returns: image basename
+        """
+        return self._image_basename
+
+    def get_notes(self):
+        """Gets notes for microscopy product
+        :returns: microscopy product id
+        """
+        return self._notes
+
+    def get_as_string(self):
+        """Returns microscopy product as a string
+        that can be displayed on the command line to the
+        user. Format:
+        
+        Id: <ID>
+
+        Image Basename:
+
+        <image basename>
+
+        Notes:
+
+        <notes>
+
+        :returns: string describing this Microscopy Product
+        """
+        return ('\n\n' + MicroscopyProduct.ID_KEYWORD + ' ' +
+                str(self.get_id()) + '\n\n' +
+                MicroscopyProduct.IMAGE_BASENAME_KEYWORD + '\n\n' +
+                str(self.get_image_basename()) + '\n\n' +
+                MicroscopyProduct.NOTES_KEYWORD + '\n\n' +
+                str(self.get_notes()) + '\n\n')

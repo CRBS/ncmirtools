@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+test_microscopyproduct
+----------------------------------
+
+Tests for `MicroscopyProduct` class.
+"""
+
+import sys
+import unittest
+
+from ncmirtools.lookup import MicroscopyProduct
+
+
+class TestMicroscopyProduct(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_constructor(self):
+        mp = MicroscopyProduct()
+        self.assertEqual(mp.get_id(), None)
+        self.assertEqual(mp.get_image_basename(), None)
+        self.assertEqual(mp.get_notes(), None)
+
+        mp = MicroscopyProduct(id=4, image_basename='blah',
+                               notes='some notes')
+        self.assertEqual(mp.get_id(), 4)
+        self.assertEqual(mp.get_image_basename(), 'blah')
+        self.assertEqual(mp.get_notes(), 'some notes')
+
+    def test_get_as_string(self):
+        mp = MicroscopyProduct()
+        self.assertEqual(mp.get_as_string(), '\n\nId: None\n\nImage Basename:'
+                                             '\n\nNone\n\nNotes:\n\nNone\n\n')
+
+        mp = MicroscopyProduct(id=4, image_basename='blah',
+                               notes='some notes')
+
+        self.assertEqual(mp.get_as_string(), '\n\nId: 4\n\nImage Basename:\n\n'
+                                             'blah\n\nNotes:\n\nsome notes\n\n')
+
+
+if __name__ == '__main__':
+    sys.exit(unittest.main())
