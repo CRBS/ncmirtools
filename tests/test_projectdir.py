@@ -10,7 +10,6 @@ Tests for `lookup` module.
 import re
 import os
 import sys
-import logging
 import tempfile
 import shutil
 import unittest

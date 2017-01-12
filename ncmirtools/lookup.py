@@ -204,10 +204,9 @@ class DirectoryForId(object):
         return matching_dirs
 
 
-class ProjectSearchViaDatabase(object):
-    """Searches for Projects via Database
+class Database(object):
+    """Gets connection to database using config passed in
     """
-
     def __init__(self, config):
         """Constructor
         :param config: ConfigParser object with information to connect to
@@ -229,7 +228,7 @@ class ProjectSearchViaDatabase(object):
         """
         self._alt_conn = conn
 
-    def _get_connection(self):
+    def get_connection(self):
         """Gets connection to database
         :returns: Connection to database as Connection object
         """
@@ -258,13 +257,38 @@ class ProjectSearchViaDatabase(object):
                               database=dbval)
         return conn
 
+
+class ProjectSearchViaDatabase(object):
+    """Searches for Projects via Database
+    """
+
+    def __init__(self, config):
+        """Constructor
+        :param config: ConfigParser object with information to connect to
+                       database.
+        """
+        self._database = Database(config)
+
+    def set_config(self, config):
+        """Sets alternate config
+        :param config: ConfigParser object with information to connect to
+                       database.
+        """
+        self._database.set_config(config)
+
+    def set_alternate_connection(self, conn):
+        """Sets alternate database connection
+        :param conn: Alternate database connection
+        """
+        self._database.set_alternate_connection(conn)
+
     def get_matching_projects(self, keyword):
         """Finds projects matching keyword
         :param keyword: Keyword to use to search for projects
         :returns: list of strings containing project id followed by project
                   name.  Ex: 20333    some project
         """
-        conn = self._get_connection()
+        conn = self._database.get_connection()
         cursor = conn.cursor()
         res = []
         try:

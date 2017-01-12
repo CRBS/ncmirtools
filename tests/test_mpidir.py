@@ -10,7 +10,6 @@ Tests for `lookup` module.
 import re
 import os
 import sys
-import logging
 import tempfile
 import shutil
 import unittest
@@ -26,7 +25,6 @@ class TestMpidir(unittest.TestCase):
 
     def tearDown(self):
         pass
-
 
     def test_parse_arguments(self):
         pargs = mpidir._parse_arguments('hello', ['12345'])
