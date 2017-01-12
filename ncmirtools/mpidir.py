@@ -7,8 +7,7 @@ import ncmirtools
 import logging
 
 from ncmirtools.lookup import DirectoryForId
-
-LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
+from ncmirtools import config
 
 # create logger
 logger = logging.getLogger('ncmirtools.mpidir')
@@ -20,29 +19,6 @@ class Parameters(object):
     """Placeholder class for parameters
     """
     pass
-
-
-def _setup_logging(theargs):
-    """hi
-    """
-    theargs.logformat = LOG_FORMAT
-    theargs.numericloglevel = logging.NOTSET
-    if theargs.loglevel == 'DEBUG':
-        theargs.numericloglevel = logging.DEBUG
-    if theargs.loglevel == 'INFO':
-        theargs.numericloglevel = logging.INFO
-    if theargs.loglevel == 'WARNING':
-        theargs.numericloglevel = logging.WARNING
-    if theargs.loglevel == 'ERROR':
-        theargs.numericloglevel = logging.ERROR
-    if theargs.loglevel == 'CRITICAL':
-        theargs.numericloglevel = logging.CRITICAL
-
-    logger.setLevel(theargs.numericloglevel)
-    logging.basicConfig(format=theargs.logformat)
-
-    logging.getLogger('ncmirtools.mpidir').setLevel(theargs.numericloglevel)
-    logging.getLogger('ncmirtools.lookup').setLevel(theargs.numericloglevel)
 
 
 def _parse_arguments(desc, args):
@@ -97,7 +73,7 @@ def _run_lookup(prefixdir, mpid):
         return 2
 
 
-def main():
+def main(arglist):
     desc = """
               Version {version}
 
@@ -121,15 +97,15 @@ def main():
               """.format(version=ncmirtools.__version__,
                          dirnotfound=DIR_NOT_FOUND_MSG)
 
-    theargs = _parse_arguments(desc, sys.argv[1:])
-    theargs.program = sys.argv[0]
+    theargs = _parse_arguments(desc, arglist[1:])
+    theargs.program = arglist[0]
     theargs.version = ncmirtools.__version__
-    _setup_logging(theargs)
+    config.setup_logging(logger, loglevel=theargs.loglevel)
     try:
         return _run_lookup(theargs.prefixdir, theargs.mpid)
     finally:
         logging.shutdown()
 
 
-if __name__ == '__main__':
-    sys.exit(main())
+if __name__ == '__main__':  # pragma: no cover
+    sys.exit(main(sys.argv))

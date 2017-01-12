@@ -9,6 +9,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def setup_logging(thelogger,
+                  log_format='%(asctime)-15s %(levelname)s %(name)s '
+                             '%(message)s',
+                  loglevel='WARNING'):
+    """Sets up logging
+    """
+    if loglevel == 'DEBUG':
+        numericloglevel = logging.DEBUG
+    if loglevel == 'INFO':
+        numericloglevel = logging.INFO
+    if loglevel == 'WARNING':
+        numericloglevel = logging.WARNING
+    if loglevel == 'ERROR':
+        numericloglevel = logging.ERROR
+    if loglevel == 'CRITICAL':
+        numericloglevel = logging.CRITICAL
+
+    logger.setLevel(numericloglevel)
+    thelogger.setLevel(numericloglevel)
+    logging.basicConfig(format=log_format)
+    logging.getLogger('ncmirtools.projectsearch').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.projectdir').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.mpidir').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.lookup').setLevel(numericloglevel)
+
+
 class ConfigMissingError(Exception):
     """Raised if configuration file is missing
     """

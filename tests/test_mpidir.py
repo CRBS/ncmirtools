@@ -27,39 +27,6 @@ class TestMpidir(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_setup_logging(self):
-        params = mpidir.Parameters()
-        params.loglevel = 'DEBUG'
-        mpidir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.DEBUG)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.mpidir').getEffectiveLevel(),
-                         logging.DEBUG)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.lookup').getEffectiveLevel(),
-                         logging.DEBUG)
-
-        params.loglevel = 'WARNING'
-        mpidir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.WARNING)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.mpidir').getEffectiveLevel(),
-                         logging.WARNING)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.lookup').getEffectiveLevel(),
-                         logging.WARNING)
-
-        params.loglevel = 'INFO'
-        mpidir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.INFO)
-
-        params.loglevel = 'ERROR'
-        mpidir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.ERROR)
-
-        params.loglevel = 'CRITICAL'
-        mpidir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.CRITICAL)
 
     def test_parse_arguments(self):
         pargs = mpidir._parse_arguments('hello', ['12345'])
@@ -99,7 +66,7 @@ class TestMpidir(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_main(self):
-        self.assertEqual(mpidir.main(), 1)
+        self.assertEqual(mpidir.main(['hi', 'blah']), 1)
 
 
 if __name__ == '__main__':

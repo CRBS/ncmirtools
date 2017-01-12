@@ -9,7 +9,6 @@ Tests for `lookup` module.
 """
 
 import sys
-import logging
 import unittest
 
 from ncmirtools import projectsearch
@@ -22,40 +21,6 @@ class TestProjectdir(unittest.TestCase):
 
     def tearDown(self):
         pass
-
-    def test_setup_logging(self):
-        params = projectsearch.Parameters()
-        params.loglevel = 'DEBUG'
-        projectsearch._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.DEBUG)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.projectsearch').getEffectiveLevel(),
-                         logging.DEBUG)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.lookup').getEffectiveLevel(),
-                         logging.DEBUG)
-
-        params.loglevel = 'WARNING'
-        projectsearch._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.WARNING)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.projectsearch').getEffectiveLevel(),
-                         logging.WARNING)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.lookup').getEffectiveLevel(),
-                         logging.WARNING)
-
-        params.loglevel = 'INFO'
-        projectsearch._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.INFO)
-
-        params.loglevel = 'ERROR'
-        projectsearch._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.ERROR)
-
-        params.loglevel = 'CRITICAL'
-        projectsearch._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.CRITICAL)
 
     def test_parse_arguments(self):
         pargs = projectsearch._parse_arguments('hello', ['12345'])
@@ -71,7 +36,8 @@ class TestProjectdir(unittest.TestCase):
         self.assertEqual(pargs.homedir, 'foo')
 
     def test_main(self):
-        self.assertTrue(projectsearch.main() >= 0)
+        self.assertTrue(projectsearch.main(['projectsearch.py',
+                                            'somearg']) >= 0)
 
 
 if __name__ == '__main__':

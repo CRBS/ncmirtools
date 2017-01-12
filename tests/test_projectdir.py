@@ -27,40 +27,6 @@ class TestProjectdir(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_setup_logging(self):
-        params = projectdir.Parameters()
-        params.loglevel = 'DEBUG'
-        projectdir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.DEBUG)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.projectdir').getEffectiveLevel(),
-                         logging.DEBUG)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.lookup').getEffectiveLevel(),
-                         logging.DEBUG)
-
-        params.loglevel = 'WARNING'
-        projectdir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.WARNING)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.projectdir').getEffectiveLevel(),
-                         logging.WARNING)
-        self.assertEqual(logging.getLogger
-                         ('ncmirtools.lookup').getEffectiveLevel(),
-                         logging.WARNING)
-
-        params.loglevel = 'INFO'
-        projectdir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.INFO)
-
-        params.loglevel = 'ERROR'
-        projectdir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.ERROR)
-
-        params.loglevel = 'CRITICAL'
-        projectdir._setup_logging(params)
-        self.assertEqual(params.numericloglevel, logging.CRITICAL)
-
     def test_parse_arguments(self):
         pargs = projectdir._parse_arguments('hello', ['12345'])
         self.assertEqual(pargs.projectid, '12345')
@@ -100,7 +66,7 @@ class TestProjectdir(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_main(self):
-        self.assertEqual(projectdir.main(), 1)
+        self.assertEqual(projectdir.main(['foo.py', 'somearg']), 1)
 
 
 if __name__ == '__main__':

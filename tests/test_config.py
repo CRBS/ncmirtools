@@ -13,9 +13,11 @@ import sys
 import unittest
 import os
 import configparser
+import logging
 
 from ncmirtools.config import ConfigMissingError
 from ncmirtools.config import NcmirToolsConfig
+from ncmirtools import config
 
 
 class TestConfig(unittest.TestCase):
@@ -25,6 +27,46 @@ class TestConfig(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def test_setup_logging(self):
+
+        logger = logging.getLogger('fooey')
+
+        config.setup_logging(logger)
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.projectsearch').getEffectiveLevel(),
+                         logging.WARNING)
+
+        config.setup_logging(logger, loglevel='DEBUG')
+        self.assertEqual(logger.getEffectiveLevel(),
+                         logging.DEBUG)
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.projectsearch').getEffectiveLevel(),
+                         logging.DEBUG)
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.lookup').getEffectiveLevel(),
+                         logging.DEBUG)
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.projectdir').getEffectiveLevel(),
+                         logging.DEBUG)
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.lookup').getEffectiveLevel(),
+                         logging.DEBUG)
+
+        config.setup_logging(logger, loglevel='INFO')
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.projectdir').getEffectiveLevel(),
+                         logging.INFO)
+
+        config.setup_logging(logger, loglevel='ERROR')
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.projectdir').getEffectiveLevel(),
+                         logging.ERROR)
+
+        config.setup_logging(logger, loglevel='CRITICAL')
+        self.assertEqual(logging.getLogger
+                         ('ncmirtools.projectdir').getEffectiveLevel(),
+                         logging.CRITICAL)
 
     def test_home_directory(self):
         con = NcmirToolsConfig()

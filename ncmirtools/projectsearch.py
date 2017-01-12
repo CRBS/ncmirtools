@@ -9,8 +9,8 @@ import logging
 from ncmirtools.lookup import ProjectSearchViaDatabase
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.config import ConfigMissingError
+from ncmirtools import config
 
-LOG_FORMAT = "%(asctime)-15s %(levelname)s %(name)s %(message)s"
 
 # create logger
 logger = logging.getLogger('ncmirtools.projectsearch')
@@ -22,31 +22,6 @@ class Parameters(object):
     """Placeholder class for parameters
     """
     pass
-
-
-def _setup_logging(theargs):
-    """hi
-    """
-    theargs.logformat = LOG_FORMAT
-    theargs.numericloglevel = logging.NOTSET
-    if theargs.loglevel == 'DEBUG':
-        theargs.numericloglevel = logging.DEBUG
-    if theargs.loglevel == 'INFO':
-        theargs.numericloglevel = logging.INFO
-    if theargs.loglevel == 'WARNING':
-        theargs.numericloglevel = logging.WARNING
-    if theargs.loglevel == 'ERROR':
-        theargs.numericloglevel = logging.ERROR
-    if theargs.loglevel == 'CRITICAL':
-        theargs.numericloglevel = logging.CRITICAL
-
-    logger.setLevel(theargs.numericloglevel)
-    logging.basicConfig(format=theargs.logformat)
-
-    logging.getLogger('ncmirtools.config').setLevel(theargs.numericloglevel)
-    logging.getLogger('ncmirtools.projectsearch').\
-        setLevel(theargs.numericloglevel)
-    logging.getLogger('ncmirtools.lookup').setLevel(theargs.numericloglevel)
 
 
 def _parse_arguments(desc, args):
@@ -104,8 +79,8 @@ def _run_search_database(keyword, homedir):
         return 2
 
 
-def main():
-    config = NcmirToolsConfig()
+def main(arglist):
+    con = NcmirToolsConfig()
     desc = """
               Version {version}
 
@@ -155,17 +130,17 @@ def main():
                          port=NcmirToolsConfig.POSTGRES_PORT,
                          host=NcmirToolsConfig.POSTGRES_HOST,
                          database=NcmirToolsConfig.POSTGRES_DB,
-                         config_file=', '.join(config.get_config_files()))
+                         config_file=', '.join(con.get_config_files()))
 
-    theargs = _parse_arguments(desc, sys.argv[1:])
-    theargs.program = sys.argv[0]
+    theargs = _parse_arguments(desc, arglist[1:])
+    theargs.program = arglist[0]
     theargs.version = ncmirtools.__version__
-    _setup_logging(theargs)
+    config.setup_logging(logger, loglevel=theargs.loglevel)
     try:
         return _run_search_database(theargs.keyword, theargs.homedir)
     finally:
         logging.shutdown()
 
 
-if __name__ == '__main__':
-    sys.exit(main())
+if __name__ == '__main__':  # pragma: no cover
+    sys.exit(main(sys.argv))
