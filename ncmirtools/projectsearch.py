@@ -65,7 +65,7 @@ def _parse_arguments(desc, args):
                         default='WARNING')
     parser.add_argument("--homedir", help='Sets alternate home directory'
                                           'under which the ' +
-                                          NcmirToolsConfig.CONFIG_FILE +
+                                          NcmirToolsConfig.UCONFIG_FILE +
                                           ' is loaded (default ~)',
                         default='~')
     parser.add_argument('--version', action='version',
@@ -133,7 +133,9 @@ def main():
               This script requires a configuration file which contains
               the information to connect to the database.
 
-              For this account the file should be located here:
+              For this account the file should be located in one of these
+              paths:
+
               {config_file}
 
               and should have the following format:
@@ -153,7 +155,7 @@ def main():
                          port=NcmirToolsConfig.POSTGRES_PORT,
                          host=NcmirToolsConfig.POSTGRES_HOST,
                          database=NcmirToolsConfig.POSTGRES_DB,
-                         config_file=config.get_config_file())
+                         config_file=', '.join(config.get_config_files()))
 
     theargs = _parse_arguments(desc, sys.argv[1:])
     theargs.program = sys.argv[0]

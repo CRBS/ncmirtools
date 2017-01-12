@@ -35,29 +35,36 @@ class TestConfig(unittest.TestCase):
         con.set_home_directory('/foo')
         self.assertEqual(con.get_home_directory(), '/foo')
 
+    def test_etc_directory(self):
+        con = NcmirToolsConfig()
+        self.assertEqual(con.get_etc_directory(), NcmirToolsConfig.ETC_DIR)
+        con.set_etc_directory('/foo')
+        self.assertEqual(con.get_etc_directory(), '/foo')
+
     def test_get_config_file(self):
         con = NcmirToolsConfig()
 
         path = os.path.expanduser('~')
         self.assertEqual(con.get_home_directory(), path)
-        self.assertEqual(con.get_config_file(),
-                         os.path.join(path,
-                                      NcmirToolsConfig.CONFIG_FILE))
+        self.assertEqual(con.get_config_files(),
+                         [os.path.join(NcmirToolsConfig.ETC_DIR,
+                                       NcmirToolsConfig.CONFIG_FILE),
+                          os.path.join(path,
+                                       NcmirToolsConfig.UCONFIG_FILE)])
 
     def test_get_config_no_config_file_exists(self):
         temp_dir = tempfile.mkdtemp()
         try:
             con = NcmirToolsConfig()
             con.set_home_directory(temp_dir)
-
+            con.set_etc_directory(os.path.join(temp_dir, 'etc'))
             try:
                 con.get_config()
                 self.fail('Expected ConfigMissingError')
             except ConfigMissingError as e:
                 self.assertEqual(str(e),
-                                 'No configuration file found here: ' +
-                                 os.path.join(temp_dir,
-                                              con.get_config_file()))
+                                 'No configuration file found in paths: ' +
+                                 ', '.join(con.get_config_files()))
         finally:
             shutil.rmtree(temp_dir)
 
@@ -72,7 +79,7 @@ class TestConfig(unittest.TestCase):
             initialcon.set(NcmirToolsConfig.POSTGRES_SECTION,
                            NcmirToolsConfig.POSTGRES_USER,
                            'bob')
-            f = open(con.get_config_file(), 'w')
+            f = open(con.get_config_files()[1], 'w')
             initialcon.write(f)
             f.flush()
             f.close()
