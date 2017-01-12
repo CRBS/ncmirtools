@@ -6,16 +6,16 @@ import argparse
 import ncmirtools
 import logging
 
-from ncmirtools.lookup import ProjectSearchViaDatabase
+from ncmirtools.lookup import MicroscopyProuctLookupViaDatabase
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.config import ConfigMissingError
 from ncmirtools import config
 
 
 # create logger
-logger = logging.getLogger('ncmirtools.projectsearch')
+logger = logging.getLogger('ncmirtools.mpidinfo')
 
-NO_PROJECTS_FOUND_MSG = 'No matching projects found'
+NO_MICROSCOPY_PRODUCT_FOUND_MSG = 'No matching Microscopy Product found'
 
 
 class Parameters(object):
@@ -32,8 +32,7 @@ def _parse_arguments(desc, args):
     help_formatter = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=help_formatter)
-    parser.add_argument("keyword", help='keyword to search for in name or '
-                                        ' description of project')
+    parser.add_argument("mpid", help='Microscopy product id')
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level (default WARNING)",
@@ -49,28 +48,27 @@ def _parse_arguments(desc, args):
     return parser.parse_args(args, namespace=parsed_arguments)
 
 
-def _run_search_database(keyword, homedir):
+def _run_search_database(mpid, homedir):
     """Performs search for directory
     :param prefixdir: Directory search path
-    :param mpid: microcsopy product id to use to find directory
+    :param mpid: microscopy product id to use to find directory
     :returns: exit code for program
     """
     try:
         config = NcmirToolsConfig()
         config.set_home_directory(os.path.expanduser(homedir))
 
-        search = ProjectSearchViaDatabase(config.get_config())
-        res = search.get_matching_projects(keyword)
-        if len(res) > 0:
-            for entry in res:
-                sys.stdout.write(entry + os.linesep)
+        search = MicroscopyProuctLookupViaDatabase(config.get_config())
+        res = search.get_microscopyproduct_for_id(mpid)
+        if res is not None:
+            sys.stdout.write(res.get_as_string())
             return 0
 
-        sys.stderr.write(NO_PROJECTS_FOUND_MSG + os.linesep)
+        sys.stderr.write(NO_MICROSCOPY_PRODUCT_FOUND_MSG + os.linesep)
         return 1
     except ConfigMissingError:
         sys.stderr.write('\nERROR: Configuration file missing.\n'
-                         ' Please run projectsearch.py --help for '
+                         ' Please run mpidinfo.py --help for '
                          'information on how\n to create a configuration '
                          'file\n\n')
         return 3
@@ -84,16 +82,23 @@ def main(arglist):
     desc = """
               Version {version}
 
-              Given a <keyword> this script searches the database for any
-              projects where the keyword exists in the project name or
-              description. The search is case insensitive. The matching
-              projects will be output separated by new line characters
-              as follows:
+              Given a <mpid> this script searches the database for
+              a Microscopy Product that has this <mpid>.
+              The matching Microscopy Product will be output in this format
 
-              <project id>   <project name>
+              Id: <mpid>
 
-              If no project matches the <keyword> is found this program will
-              output to standard error the message '{projectnotfound}'
+              Image Basename:
+
+                 <image basename>
+
+              Notes:
+
+                 <notes>
+
+              If no Microscopy Product matches the <mpid> is found this
+              program will output to standard error the message
+              '{mpnotfound}'
               and exit with value 1.
 
               If there is an unknown error this program will output a message
@@ -105,9 +110,18 @@ def main(arglist):
 
               Example Usage:
 
-              projectsearch.py 'yo'
-              2033 yo project
-              2047 you better believe it
+              mpidinfo.py 123
+
+              Id: 123
+
+              Image Basename:
+
+                 foo
+
+              Notes:
+
+                 some notes
+
 
               NOTE:
 
@@ -129,7 +143,7 @@ def main(arglist):
               {database} = <database name>
 
               """.format(version=ncmirtools.__version__,
-                         projectnotfound=NO_PROJECTS_FOUND_MSG,
+                         mpnotfound=NO_MICROSCOPY_PRODUCT_FOUND_MSG,
                          db=NcmirToolsConfig.POSTGRES_SECTION,
                          user=NcmirToolsConfig.POSTGRES_USER,
                          password=NcmirToolsConfig.POSTGRES_PASS,
@@ -143,7 +157,7 @@ def main(arglist):
     theargs.version = ncmirtools.__version__
     config.setup_logging(logger, loglevel=theargs.loglevel)
     try:
-        return _run_search_database(theargs.keyword, theargs.homedir)
+        return _run_search_database(theargs.mpid, theargs.homedir)
     finally:
         logging.shutdown()
 

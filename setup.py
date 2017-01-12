@@ -51,7 +51,8 @@ setup(
     ],
     scripts = [ 'ncmirtools/mpidir.py',
                 'ncmirtools/projectsearch.py',
-                'ncmirtools/projectdir.py'
+                'ncmirtools/projectdir.py',
+                'ncmirtools/mpidinfo.py'
               ],
     test_suite='tests',
     tests_require=test_requirements

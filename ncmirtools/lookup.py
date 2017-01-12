@@ -5,6 +5,7 @@ import os
 import logging
 import re
 import pg8000
+from textwrap import TextWrapper
 
 from ncmirtools.config import NcmirToolsConfig
 
@@ -315,21 +316,23 @@ class MicroscopyProduct(object):
     ID_KEYWORD = 'Id:'
     IMAGE_BASENAME_KEYWORD = 'Image Basename:'
     NOTES_KEYWORD = 'Notes:'
+    INDENT = '   '
+    MAX_WIDTH = 70
 
-    def __init__(self, id=None, image_basename=None,
+    def __init__(self, mpid=None, image_basename=None,
                  notes=None):
         """Constructor
         """
-        self._id = id
+        self._mpid = mpid
         self._image_basename = image_basename
         self._notes = notes
         pass
 
-    def get_id(self):
+    def get_mpid(self):
         """Gets id for microscopy product
         :returns: microscopy product id
         """
-        return self._id
+        return self._mpid
 
     def get_image_basename(self):
         """Gets image basename for microscopy product
@@ -347,22 +350,83 @@ class MicroscopyProduct(object):
         """Returns microscopy product as a string
         that can be displayed on the command line to the
         user. Format:
-        
+
         Id: <ID>
 
         Image Basename:
 
-        <image basename>
+            <image basename>
 
         Notes:
 
-        <notes>
+            <notes>
 
         :returns: string describing this Microscopy Product
         """
-        return ('\n\n' + MicroscopyProduct.ID_KEYWORD + ' ' +
-                str(self.get_id()) + '\n\n' +
+        wrap = TextWrapper(initial_indent=MicroscopyProduct.INDENT,
+                           subsequent_indent=MicroscopyProduct.INDENT,
+                           width=MicroscopyProduct.MAX_WIDTH)
+        return ('\n' + MicroscopyProduct.ID_KEYWORD + ' ' +
+                str(self.get_mpid()) + '\n\n' +
                 MicroscopyProduct.IMAGE_BASENAME_KEYWORD + '\n\n' +
-                str(self.get_image_basename()) + '\n\n' +
+                wrap.fill(str(self.get_image_basename())) +
+                '\n\n' +
                 MicroscopyProduct.NOTES_KEYWORD + '\n\n' +
-                str(self.get_notes()) + '\n\n')
+                wrap.fill(str(self.get_notes())) + '\n\n')
+
+
+class MicroscopyProuctLookupViaDatabase(object):
+    """Searches for Projects via Database
+    """
+
+    def __init__(self, config):
+        """Constructor
+        :param config: ConfigParser object with information to connect to
+                       database.
+        """
+        self._database = Database(config)
+
+    def set_config(self, config):
+        """Sets alternate config
+        :param config: ConfigParser object with information to connect to
+                       database.
+        """
+        self._database.set_config(config)
+
+    def set_alternate_connection(self, conn):
+        """Sets alternate database connection
+        :param conn: Alternate database connection
+        """
+        self._database.set_alternate_connection(conn)
+
+    def get_microscopyproduct_for_id(self, mpid):
+        """Finds projects matching keyword
+        :param mpid: microscopy product id
+        :returns: `MicroscopyProduct` object if found or None if
+                  not found.
+        """
+        conn = self._database.get_connection()
+        cursor = conn.cursor()
+        if id is None:
+            logger.error('Microscopy Product id is none')
+            return None
+
+        try:
+            cursor.execute("SELECT image_basename,notes FROM "
+                           "Microscopy_products "
+                           "WHERE mpid='" + str(mpid) + "'")
+            if cursor.rowcount <= 0:
+                logger.info('No Microsopy '
+                            'Product found for id ' +
+                            str(id))
+                return None
+
+            tuple = cursor.fetchone()
+            mp = MicroscopyProduct(mpid=str(mpid),
+                                   image_basename=str(tuple[0]),
+                                   notes=str(tuple[1]))
+            return mp
+        finally:
+            cursor.close()
+            conn.commit()
+            conn.close()
