@@ -35,6 +35,8 @@ Tools
 
 * **projectsearch.py** -- Allows caller to search database for projects
 
+* **mpidinfo.py** -- Queries database and returns information on specific Microscopy Product
+
 Dependencies
 ------------
 
