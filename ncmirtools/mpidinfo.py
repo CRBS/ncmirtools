@@ -32,7 +32,9 @@ def _parse_arguments(desc, args):
     help_formatter = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=help_formatter)
-    parser.add_argument("mpid", help='Microscopy product id')
+    parser.add_argument("mpid", help='Microscopy product id (must be'
+                                     'an int less then 2^31)',
+                        type=int)
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level (default WARNING)",

@@ -5,6 +5,7 @@ import os
 import logging
 import re
 import pg8000
+import math
 from textwrap import TextWrapper
 
 from ncmirtools.config import NcmirToolsConfig
@@ -251,7 +252,7 @@ class Database(object):
 
         dbval = self._config.get(NcmirToolsConfig.POSTGRES_SECTION,
                                  NcmirToolsConfig.POSTGRES_DB)
-
+        logger.debug('Getting database connection to pg8000')
         conn = pg8000.connect(host=hostval, user=userval,
                               password=passval,
                               port=int(portval),
@@ -294,6 +295,7 @@ class ProjectSearchViaDatabase(object):
         res = []
         try:
             if keyword is None:
+                logger.debug('keyword is None getting all projects')
                 cursor.execute("SELECT Project_id,project_name FROM Project")
             else:
                 cursor.execute("SELECT Project_id,project_name FROM Project "
@@ -378,6 +380,7 @@ class MicroscopyProduct(object):
 class MicroscopyProductLookupViaDatabase(object):
     """Searches for Projects via Database
     """
+    MAX_MPID = int(math.pow(2, 31))
 
     def __init__(self, config):
         """Constructor
@@ -401,12 +404,22 @@ class MicroscopyProductLookupViaDatabase(object):
 
     def get_microscopyproduct_for_id(self, mpid):
         """Finds projects matching keyword
-        :param mpid: microscopy product id
+        :param mpid: microscopy product id which must be an int less
+                     then 2^32
         :returns: `MicroscopyProduct` object if found or None if
-                  not found.
+                  not found or if there was an error with the query
         """
         if mpid is None:
             logger.error('Microscopy Product id is none')
+            return None
+
+        if type(mpid) is not int:
+            logger.error('Invalid Microscopy Product Id, must be an integer')
+            return None
+
+        if mpid >= MicroscopyProductLookupViaDatabase.MAX_MPID:
+            logger.error('Microscopy Product Id cannot be larger then '
+                         '2^32-1')
             return None
 
         conn = None
@@ -414,6 +427,8 @@ class MicroscopyProductLookupViaDatabase(object):
         try:
             conn = self._database.get_connection()
             cursor = conn.cursor()
+            logger.debug('Querying for Microscopy Product with '
+                         'mpid: ' + str(mpid))
             cursor.execute("SELECT image_basename,notes FROM "
                            "Microscopy_products "
                            "WHERE mpid='" + str(mpid) + "'")
@@ -426,7 +441,6 @@ class MicroscopyProductLookupViaDatabase(object):
                 logger.warning('More then one entry matches'
                                'this MicroscopyProduct id' +
                                str(mpid))
-
             tuple = cursor.fetchone()
             mp = MicroscopyProduct(mpid=str(mpid),
                                    image_basename=str(tuple[0]),
