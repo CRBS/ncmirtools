@@ -50,8 +50,9 @@ class TestProjectSearchViaDatabase(unittest.TestCase):
         mcursor.fetchall = Mock(return_value=[(1, 'koo'), (3, 'yo'),
                                               ('4', 'val val')])
         mockcon.cursor = Mock(return_value=mcursor)
-
+        ps.set_config(configparser.ConfigParser())
         ps.set_alternate_connection(mockcon)
+
         res = ps.get_matching_projects('ha ha')
 
         mcursor.execute.assert_called_with("SELECT Project_id,project_name "
