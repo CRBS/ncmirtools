@@ -6,7 +6,7 @@ import argparse
 import ncmirtools
 import logging
 
-from ncmirtools.lookup import MicroscopyProuctLookupViaDatabase
+from ncmirtools.lookup import MicroscopyProductLookupViaDatabase
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.config import ConfigMissingError
 from ncmirtools import config
@@ -58,7 +58,7 @@ def _run_search_database(mpid, homedir):
         config = NcmirToolsConfig()
         config.set_home_directory(os.path.expanduser(homedir))
 
-        search = MicroscopyProuctLookupViaDatabase(config.get_config())
+        search = MicroscopyProductLookupViaDatabase(config.get_config())
         res = search.get_microscopyproduct_for_id(mpid)
         if res is not None:
             sys.stdout.write(res.get_as_string())
