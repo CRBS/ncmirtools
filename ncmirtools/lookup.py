@@ -375,7 +375,7 @@ class MicroscopyProduct(object):
                 wrap.fill(str(self.get_notes())) + '\n\n')
 
 
-class MicroscopyProuctLookupViaDatabase(object):
+class MicroscopyProductLookupViaDatabase(object):
     """Searches for Projects via Database
     """
 
@@ -405,13 +405,15 @@ class MicroscopyProuctLookupViaDatabase(object):
         :returns: `MicroscopyProduct` object if found or None if
                   not found.
         """
-        conn = self._database.get_connection()
-        cursor = conn.cursor()
-        if id is None:
+        if mpid is None:
             logger.error('Microscopy Product id is none')
             return None
 
+        conn = None
+        cursor = None
         try:
+            conn = self._database.get_connection()
+            cursor = conn.cursor()
             cursor.execute("SELECT image_basename,notes FROM "
                            "Microscopy_products "
                            "WHERE mpid='" + str(mpid) + "'")
@@ -420,6 +422,10 @@ class MicroscopyProuctLookupViaDatabase(object):
                             'Product found for id ' +
                             str(id))
                 return None
+            if cursor.rowcount > 1:
+                logger.warning('More then one entry matches'
+                               'this MicroscopyProduct id' +
+                               str(mpid))
 
             tuple = cursor.fetchone()
             mp = MicroscopyProduct(mpid=str(mpid),
@@ -427,6 +433,8 @@ class MicroscopyProuctLookupViaDatabase(object):
                                    notes=str(tuple[1]))
             return mp
         finally:
-            cursor.close()
-            conn.commit()
-            conn.close()
+            if cursor is not None:
+                cursor.close()
+            if conn is not None:
+                conn.commit()
+                conn.close()
