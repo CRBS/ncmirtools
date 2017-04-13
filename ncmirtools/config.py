@@ -33,6 +33,7 @@ def setup_logging(thelogger,
     logging.getLogger('ncmirtools.projectdir').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.mpidir').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.lookup').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.imagetokiosk').setLevel(numericloglevel)
 
 
 class ConfigMissingError(Exception):
@@ -54,7 +55,15 @@ class NcmirToolsConfig(object):
     POSTGRES_HOST = 'host'
     POSTGRES_PORT = 'port'
     POSTGRES_DB = 'database'
-    ETC_DIR = '/etc'
+    DATASERVER_SECTION = 'dataserver'
+    DATASERVER_DATADIR = 'datadir'
+    DATASERVER_IMGSUFFIX = 'imagesuffix'
+    DATASERVER_DIRSTOEXCLUDE = 'dirstoexclude'
+    DATASERVER_KIOSKSERVER = 'kioskserver'
+    DATASERVER_KIOSKDIR = 'kioskdir'
+    DATASERVER_LOCKFILE = 'lockfile'
+
+    ETC_DIR = os.path.sep + 'etc'
 
     def __init__(self):
         """Constructor
