@@ -12,7 +12,8 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     "argparse",
     "configparser",
-    "pg8000"
+    "pg8000",
+    "lockfile"
 ]
 
 test_requirements = [
@@ -52,7 +53,8 @@ setup(
     scripts = [ 'ncmirtools/mpidir.py',
                 'ncmirtools/projectsearch.py',
                 'ncmirtools/projectdir.py',
-                'ncmirtools/mpidinfo.py'
+                'ncmirtools/mpidinfo.py',
+                'ncmirtools/imagetokiosk.py'
               ],
     test_suite='tests',
     tests_require=test_requirements
