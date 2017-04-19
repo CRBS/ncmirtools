@@ -13,13 +13,15 @@ requirements = [
     "argparse",
     "configparser",
     "pg8000",
-    "lockfile"
+    "lockfile",
+    "ftpretty"
 ]
 
 test_requirements = [
     "argparse",
     "pg8000",
     "configparser",
+    "ftpretty",
     "mock"
 ]
 
