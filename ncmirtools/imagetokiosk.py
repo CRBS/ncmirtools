@@ -71,11 +71,9 @@ def _parse_arguments(desc, args):
 def _get_lock(lockfile):
     """Create lock file to prevent this process from running on same data.
 
-       This uses ``PIDLockFile`` to create a pid lock file in latest_weekly
-       directory named celprunner.<stage>.lockpid
+       This uses ``PIDLockFile`` to create a pid lock file
        If pid exists it is assumed the lock is held otherwise lock
        is broken and recreated
-
        :param lockfile: lockfile path
        :return: ``PIDLockFile`` upon success
        :raises: LockException: If there was a problem locking
@@ -105,7 +103,8 @@ def _get_lock(lockfile):
     return lock
 
 
-def _get_files_in_directory_generator(self, path):
+def _get_files_in_directory_generator(path,
+                                      list_of_dirs_to_exclude):
     """Generator that gets files in directory"""
 
     if path is None:
@@ -129,8 +128,12 @@ def _get_files_in_directory_generator(self, path):
         if os.path.isfile(fullpath):
             yield fullpath
         if os.path.isdir(fullpath):
-            for aentry in self._get_files_in_directory_generator(fullpath):
-                yield aentry
+            if list_of_dirs_to_exclude is None or \
+                            os.path.basename(fullpath) not in \
+                            list_of_dirs_to_exclude:
+                for aentry in _get_files_in_directory_generator(fullpath,
+                                                                list_of_dirs_to_exclude):
+                    yield aentry
 
 
 def _get_second_youngest_image_file(searchdir, suffix, list_of_dirs_to_exclude):
@@ -150,9 +153,11 @@ def _get_second_youngest_image_file(searchdir, suffix, list_of_dirs_to_exclude):
     # walk through all files in file system skipping files that
     # do NOT match `suffix`
     # Also exclude any paths
-    for img_file in _get_files_in_directory_generator(searchdir):
-        if not img_file.endswith(suffix):
+    for img_file in _get_files_in_directory_generator(searchdir,
+                                                      list_of_dirs_to_exclude):
+        if suffix is not None and not img_file.endswith(suffix):
             continue
+
         file_mtime = os.path.getmtime(img_file)
         if file_mtime > curyoungest_file_mtime:
             secondyoungest_file = curyoungest_file
@@ -162,9 +167,62 @@ def _get_second_youngest_image_file(searchdir, suffix, list_of_dirs_to_exclude):
     return secondyoungest_file
 
 
-def _upload_image_file(thefile, con):
-    """hi
+def _get_last_transferred_file(con):
+    """Gets last transferred file from transferlogfile
+    :param con: ConfigParser object which should have
+                a value for `NcmirToolsConfig.DATASERVER_SECTION`,
+                `NcmirToolsConfig.DATASERVER_TRANSFERLOG`
+                that contains path to transfer log file
+    :returns: string containing path to last transferred log file or None
+              if none was set
     """
+    if con is None:
+        return None
+
+    tlog = con.get(NcmirToolsConfig.DATASERVER_SECTION,
+                   NcmirToolsConfig.DATASERVER_TRANSFERLOG)
+    if not os.path.isfile(tlog):
+        logger.info('No transfer log found: ' + tlog)
+        return None
+
+    f = open(tlog, 'r')
+    try:
+        return f.readline().rstrip()
+    finally:
+        f.close()
+
+
+def _update_last_transferred_file(thefile, con):
+    """Updates last transferred file with new file
+    :param thefile: path of file to update transfer log file
+    :param con: ConfigParser object which should have a value for
+                `NcmirToolsConfig.DATASERVER_SECTION`,
+                `NcmirToolsConfig.DATASERVER_TRANSFERLOG`
+                that contains path to transfer log file
+    """
+    tlog = con.get(NcmirToolsConfig.DATASERVER_SECTION,
+                   NcmirToolsConfig.DATASERVER_TRANSFERLOG)
+    try:
+        f = open(tlog, 'w')
+        f.write(thefile + '\n')
+        f.flush()
+        f.close()
+    except IOError:
+        logger.exception('Caught exception trying to write last transfer file')
+
+
+def _upload_image_file(thefile, con):
+    """Uploads image file and logs it so we don't try to upload
+       the same file twice
+    """
+    last_file = _get_last_transferred_file(con)
+    if last_file is None or last_file != thefile:
+        logger.info('Transferring file')
+
+        logger.debug('updating transferred file')
+        _update_last_transferred_file(thefile, con)
+    else:
+        logger.debug('File already transferred')
     return
 
 
@@ -192,7 +250,7 @@ def _check_and_transfer_image(theargs):
             logger.info('Could not find second youngest file')
             return
 
-        return _check_and_transfer_image(thefile, con)
+        return _upload_image_file(thefile, con)
     finally:
         if lock is not None:
             lock.release()
@@ -227,6 +285,8 @@ def main(arglist):
               {d_exclude} = <comma delimited list of directory paths>
               {kioskserver}   = <remote kiosk server>
               {kioskdir}      = <remote kiosk directory>
+              {transferlog}   = <file which contains last file transferred,
+                                 prevents duplicate transfer of files>
               {lockfile}      = <path to lockfile,
                                 prevents duplicate invocations>
 
@@ -238,6 +298,7 @@ def main(arglist):
               {d_exclude} = $RECYCLE.BIN
               {kioskserver}   = foo.com
               {kioskdir}      = /data
+              {transferlog}   = /cygdrive/home/foo/transfer.log
               {lockfile}      = /cygdrive/home/foo/mylockfile.pid
 
               """.format(version=ncmirtools.__version__,
@@ -249,6 +310,7 @@ def main(arglist):
                          kioskserver=NcmirToolsConfig.DATASERVER_KIOSKSERVER,
                          lockfile=NcmirToolsConfig.DATASERVER_LOCKFILE,
                          homedir=HOMEDIR_ARG,
+                         transferlog=NcmirToolsConfig.DATASERVER_TRANSFERLOG,
                          config_file=', '.join(con.get_config_files()))
 
     theargs = _parse_arguments(desc, arglist[1:])
