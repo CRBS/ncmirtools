@@ -200,6 +200,10 @@ def _update_last_transferred_file(thefile, con):
                 `NcmirToolsConfig.DATASERVER_TRANSFERLOG`
                 that contains path to transfer log file
     """
+    if con is None:
+        logger.error('configuration object passed in is None')
+        return
+
     tlog = con.get(NcmirToolsConfig.DATASERVER_SECTION,
                    NcmirToolsConfig.DATASERVER_TRANSFERLOG)
     try:
@@ -209,6 +213,8 @@ def _update_last_transferred_file(thefile, con):
         f.close()
     except IOError:
         logger.exception('Caught exception trying to write last transfer file')
+    except TypeError:
+        logger.exception('Problems writing data to logfile: ' + str(thefile))
 
 
 def _upload_image_file(thefile, con):
