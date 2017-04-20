@@ -357,20 +357,25 @@ class TestImagetokiosk(unittest.TestCase):
             res = imagetokiosk._get_last_transferred_file(con)
             self.assertEqual(res, 'hello')
 
+            imagetokiosk._update_last_transferred_file(None, con)
+            res = imagetokiosk._get_last_transferred_file(con)
+            self.assertEqual(res, '')
+
         finally:
             shutil.rmtree(temp_dir)
 
-    # TODO Fix this
     def test_update_last_transferred_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            res = imagetokiosk._update_last_transferred_file(None, None)
-            self.assertEqual(res, None)
+            imagetokiosk._update_last_transferred_file(None, None)
+
+
+            lfile = os.path.join(temp_dir, 'logfile')
 
             # no section test
             con = configparser.ConfigParser()
             try:
-                res = imagetokiosk._get_last_transferred_file(con)
+                res = imagetokiosk._update_last_transferred_file('hi', con)
                 self.fail('Expected NoSectionError')
             except NoSectionError:
                 pass
@@ -378,24 +383,41 @@ class TestImagetokiosk(unittest.TestCase):
             # no option test
             con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
             try:
-                res = imagetokiosk._get_last_transferred_file(con)
+                res = imagetokiosk._update_last_transferred_file('hi', con)
                 self.fail('Expected NoOptionError')
             except NoOptionError:
                 pass
 
+            # try passing directory as file
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_TRANSFERLOG, temp_dir)
+            imagetokiosk._update_last_transferred_file('yo', con)
+
             # no log file
-            lfile = os.path.join(temp_dir, 'logfile')
             con.set(NcmirToolsConfig.DATASERVER_SECTION,
                     NcmirToolsConfig.DATASERVER_TRANSFERLOG, lfile)
-            res = imagetokiosk._get_last_transferred_file(con)
-            self.assertEqual(res, None)
+            imagetokiosk._update_last_transferred_file('hello', con)
+
+            f = open(lfile, 'r')
+            self.assertEqual(f.read(), 'hello\n')
+            f.close()
 
             f = open(lfile, 'w')
             f.write('hello\n')
             f.flush()
             f.close()
-            res = imagetokiosk._get_last_transferred_file(con)
-            self.assertEqual(res, 'hello')
+            imagetokiosk._update_last_transferred_file('bye', con)
+
+            f = open(lfile, 'r')
+            self.assertEqual(f.read(), 'bye\n')
+            f.close()
+
+            # try writing none
+            imagetokiosk._update_last_transferred_file(None, con)
+
+            f = open(lfile, 'r')
+            self.assertEqual(f.read(), '')
+            f.close()
 
         finally:
             shutil.rmtree(temp_dir)
