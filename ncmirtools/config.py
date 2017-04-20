@@ -4,6 +4,8 @@ __author__ = 'churas'
 import os
 import configparser
 import logging
+from configparser import NoOptionError
+from configparser import NoSectionError
 
 
 logger = logging.getLogger(__name__)
@@ -63,6 +65,13 @@ class NcmirToolsConfig(object):
     DATASERVER_KIOSKDIR = 'kioskdir'
     DATASERVER_TRANSFERLOG = 'transferlogfile'
     DATASERVER_LOCKFILE = 'lockfile'
+    DATASERVER_SSH_SECTION = 'dataserver_ssh'
+    DATASERVER_SSH_KIOSKKEY = 'kioskprivatekey'
+    DATASERVER_SSH_KIOSKUSER = 'kioskusername'
+    DATASERVER_SSH_KIOSKSERVERPORT = 'kioskserverport'
+    DATASERVER_SSH_KIOSK_CON_TIMEOUT = 'kioskconnecttimeout'
+    DATASERVER_SSH_KIOSK_CHANNEL_TIMEOUT = 'kioskchanneltimeout'
+    DATASERVER_SSH_KIOSK_HOST_KEY_POLICY = 'kioskhostkeypolicy'
 
     ETC_DIR = os.path.sep + 'etc'
 
