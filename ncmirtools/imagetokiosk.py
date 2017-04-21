@@ -3,12 +3,14 @@
 import os
 import sys
 import argparse
+import time
 import ncmirtools
 import logging
 import psutil
 
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools import config
+from ncmirtools.kiosk.transfer import SftpTransfer
 
 from lockfile.pidlockfile import PIDLockFile
 
@@ -17,6 +19,8 @@ from lockfile.pidlockfile import PIDLockFile
 logger = logging.getLogger('ncmirtools.imagetokioskdaemon')
 
 HOMEDIR_ARG = '--homedir'
+RUN_MODE = 'run'
+DRYRUN_MODE = 'dryrun'
 
 class Parameters(object):
     """Placeholder class for parameters
@@ -34,13 +38,16 @@ def _parse_arguments(desc, args):
                                      formatter_class=help_formatter)
 
     parser.add_argument("mode",
-                        choices=['run', 'dryrun'],
-                        help="Sets run mode dryrun only goes through the steps"
-                             " and run actually does the transfer")
+                        choices=[RUN_MODE, DRYRUN_MODE],
+                        help="Sets run mode, " + DRYRUN_MODE +
+                             " only goes through the steps"
+                             " and " + RUN_MODE +
+                             " actually does the transfer")
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level (default WARNING)",
                         default='WARNING')
+    """
     parser.add_argument("--" + NcmirToolsConfig.DATASERVER_DATADIR,
                         help='Data directory to examine '
                              'this overrides value in ' +
@@ -57,6 +64,7 @@ def _parse_arguments(desc, args):
                         help='Path to lockfile,'
                              ' overrides value in ' +
                              NcmirToolsConfig.UCONFIG_FILE)
+    """
     parser.add_argument(HOMEDIR_ARG, help='Sets alternate home directory '
                                           'under which the ' +
                                           NcmirToolsConfig.UCONFIG_FILE +
@@ -153,17 +161,28 @@ def _get_second_youngest_image_file(searchdir, suffix, list_of_dirs_to_exclude):
     # walk through all files in file system skipping files that
     # do NOT match `suffix`
     # Also exclude any paths
+    file_count = 0
+    files_wrong_suffix_count = 0
+    start_time = int(time.time())
     for img_file in _get_files_in_directory_generator(searchdir,
                                                       list_of_dirs_to_exclude):
+
         if suffix is not None and not img_file.endswith(suffix):
+            files_wrong_suffix_count += 1
             continue
 
+        file_count += 1
         file_mtime = os.path.getmtime(img_file)
         if file_mtime > curyoungest_file_mtime:
             secondyoungest_file = curyoungest_file
             curyoungest_file = img_file
             curyoungest_file_mtime = file_mtime
 
+    duration = int(time.time()) - start_time
+    logger.info('Search took ' + str(duration) + ' seconds. Found ' +
+                str(files_wrong_suffix_count) + ' eligible files and ' +
+                str(files_wrong_suffix_count) +
+                ' files with invalid suffix')
     return secondyoungest_file
 
 
@@ -217,16 +236,31 @@ def _update_last_transferred_file(thefile, con):
         logger.exception('Problems writing data to logfile: ' + str(thefile))
 
 
-def _upload_image_file(thefile, con):
+def _upload_image_file(thefile, mode, con, alt_transfer=None):
     """Uploads image file and logs it so we don't try to upload
        the same file twice
     """
     last_file = _get_last_transferred_file(con)
     if last_file is None or last_file != thefile:
         logger.info('Transferring file')
+        if alt_transfer is None:
+            logger.debug('Creating SftpTransfer object')
+            transfer = SftpTransfer(con)
+        else:
+            logger.debug('Using alternate transfer object passed in')
+            transfer = alt_transfer
 
-        logger.debug('updating transferred file')
-        _update_last_transferred_file(thefile, con)
+        if mode is RUN_MODE:
+            logger.debug('Transferring ' + str(thefile))
+            transfer.transfer_file(thefile)
+            logger.debug('Transfer complete of ' + str(thefile))
+
+            logger.debug('Updating transferred file')
+            _update_last_transferred_file(thefile, con)
+        else:
+            logger.info(DRYRUN_MODE + ' mode')
+            sys.stdout.write('File that would have been transferred: ' +
+                             thefile + '\n\n')
     else:
         logger.debug('File already transferred')
     return
@@ -235,6 +269,10 @@ def _upload_image_file(thefile, con):
 def _check_and_transfer_image(theargs):
     """Looks for new image to transfer and sends it
     """
+    if theargs.mode is DRYRUN_MODE:
+        sys.stdout.write('\n' + DRYRUN_MODE +
+                         ' NO CHANGES OR TRANSFERS WILL BE PERFORMED\n')
+
     config = NcmirToolsConfig()
     try:
         if theargs.homedir is not None:
@@ -256,7 +294,7 @@ def _check_and_transfer_image(theargs):
             logger.info('Could not find second youngest file')
             return
 
-        return _upload_image_file(thefile, con)
+        return _upload_image_file(thefile, theargs.mode, con)
     finally:
         if lock is not None:
             lock.release()
@@ -267,17 +305,21 @@ def main(arglist):
     desc = """
               Version {version}
 
-              This script examines directory set by --{datadir} for the
-              second youngest image file with value set in --{imagesuffix}. If
-              found this file is then uploaded to --{kioskserver} and
-              put in --{kioskdir} directory.
+              Using a configuration file explained below this script
+              looks for the second youngest file matching a given suffix.
+              That file is then transferred to the remote server if it was
+              NOT transferred in the previous invocation of this script.
+
+              The first argument in this script denotes whether to
+              perform the transfer or just output to standard out the
+              file that would be transferred.
 
               NOTE:
 
               This script requires a configuration file which contains
               information on what data to sync to where
 
-              Unless overriden by --{homedir} flag, the configuration file
+              Unless overriden by {homedir} flag, the configuration file
               is looked for in these paths with values in last path
               taking precedence:
 
@@ -286,26 +328,39 @@ def main(arglist):
               The configuration file should have values in this format:
 
               [{ds}]
-              {datadir}       = <directory to monitor>
-              {imagesuffix}   = <suffix of images ie .dm4>
-              {d_exclude} = <comma delimited list of directory paths>
-              {kioskserver}   = <remote kiosk server>
-              {kioskdir}      = <remote kiosk directory>
-              {transferlog}   = <file which contains last file transferred,
+
+              {datadir}          = <directory to monitor>
+              {imagesuffix}      = <suffix of images ie .dm4>
+              {d_exclude}    = <comma delimited list of directory paths>
+              {kioskserver}      = <remote kiosk server>
+              {kioskdir}         = <remote kiosk directory>
+              {transferlog}  = <file which contains last file transferred,
                                  prevents duplicate transfer of files>
-              {lockfile}      = <path to lockfile,
-                                prevents duplicate invocations>
+              {lockfile}         = <path to lockfile,
+                                   prevents duplicate invocations>
+
+              [{ds_ssh}]
+
+              {ssh_key}  = <path to private ssh key>
+              {ssh_user}    = <ssh username>
+
 
               Example configuration file:
 
               [{ds}]
-              {datadir}       = /cygdrive/e/data
-              {imagesuffix}   = .dm4
-              {d_exclude} = $RECYCLE.BIN
-              {kioskserver}   = foo.com
-              {kioskdir}      = /data
-              {transferlog}   = /cygdrive/home/foo/transfer.log
-              {lockfile}      = /cygdrive/home/foo/mylockfile.pid
+
+              {datadir}          = /cygdrive/e/data
+              {imagesuffix}      = .dm4
+              {d_exclude}    = $RECYCLE.BIN
+              {kioskserver}      = foo.com
+              {kioskdir}         = /data
+              {transferlog}  = /cygdrive/home/foo/transfer.log
+              {lockfile}         = /cygdrive/home/foo/mylockfile.pid
+
+              [{ds_ssh}]
+
+              {ssh_key}  = /cygdrive/home/foo/.ssh/mykey
+              {ssh_user}    = foo
 
               """.format(version=ncmirtools.__version__,
                          ds=NcmirToolsConfig.DATASERVER_SECTION,
@@ -317,6 +372,9 @@ def main(arglist):
                          lockfile=NcmirToolsConfig.DATASERVER_LOCKFILE,
                          homedir=HOMEDIR_ARG,
                          transferlog=NcmirToolsConfig.DATASERVER_TRANSFERLOG,
+                         ds_ssh=NcmirToolsConfig.DATASERVER_SSH_SECTION,
+                         ssh_key=NcmirToolsConfig.DATASERVER_SSH_KIOSKKEY,
+                         ssh_user=NcmirToolsConfig.DATASERVER_SSH_KIOSKUSER,
                          config_file=', '.join(con.get_config_files()))
 
     theargs = _parse_arguments(desc, arglist[1:])

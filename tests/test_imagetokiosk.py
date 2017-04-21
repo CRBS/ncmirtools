@@ -34,27 +34,15 @@ class TestImagetokiosk(unittest.TestCase):
         self.assertEqual(pargs.mode, 'run')
         self.assertEqual(pargs.loglevel, 'WARNING')
         self.assertEqual(pargs.homedir, '~')
-        self.assertEqual(pargs.datadir, None)
-        self.assertEqual(pargs.imagesuffix, None)
-        self.assertEqual(pargs.dirstoexclude, None)
-        self.assertEqual(pargs.lockfile, None)
 
         pargs = imagetokiosk._parse_arguments('some description',
-                                              ['dryrun', '--datadir', 'dd',
+                                              ['dryrun',
                                                imagetokiosk.HOMEDIR_ARG,
-                                               'home',
-                                               '--imagesuffix', 'suffix',
-                                               '--dirstoexclude', 'hi,bye',
-                                               '--lockfile', 'file',
-                                               '--log', 'DEBUG'])
+                                               'home', '--log', 'DEBUG'])
 
         self.assertEqual(pargs.mode, 'dryrun')
         self.assertEqual(pargs.loglevel, 'DEBUG')
         self.assertEqual(pargs.homedir, 'home')
-        self.assertEqual(pargs.datadir, 'dd')
-        self.assertEqual(pargs.imagesuffix, 'suffix')
-        self.assertEqual(pargs.dirstoexclude, 'hi,bye')
-        self.assertEqual(pargs.lockfile, 'file')
 
     def test_get_lock(self):
         temp_dir = tempfile.mkdtemp()
@@ -274,6 +262,7 @@ class TestImagetokiosk(unittest.TestCase):
             self.assertEqual(res, three)
         finally:
             shutil.rmtree(temp_dir)
+
     def test_second_youngest_image_file_searchdir_suffix_test(self):
         temp_dir = tempfile.mkdtemp()
         try:
