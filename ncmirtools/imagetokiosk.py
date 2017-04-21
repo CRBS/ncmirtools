@@ -180,7 +180,7 @@ def _get_second_youngest_image_file(searchdir, suffix, list_of_dirs_to_exclude):
 
     duration = int(time.time()) - start_time
     logger.info('Search took ' + str(duration) + ' seconds. Found ' +
-                str(files_wrong_suffix_count) + ' eligible files and ' +
+                str(file_count) + ' eligible files and ' +
                 str(files_wrong_suffix_count) +
                 ' files with invalid suffix')
     return secondyoungest_file
@@ -250,10 +250,17 @@ def _upload_image_file(thefile, mode, con, alt_transfer=None):
             logger.debug('Using alternate transfer object passed in')
             transfer = alt_transfer
 
-        if mode is RUN_MODE:
-            logger.debug('Transferring ' + str(thefile))
-            transfer.transfer_file(thefile)
-            logger.debug('Transfer complete of ' + str(thefile))
+        if mode == RUN_MODE:
+
+            try:
+                transfer.connect()
+                logger.debug('Transferring ' + str(thefile))
+                status, duration, bytes_transferred = transfer.transfer_file(thefile)
+                logger.info('Status ' + str(status) + ' duration ' + str(duration) +
+                            ' bytes transferred ' + str(bytes_transferred))
+                logger.debug('Transfer complete of ' + str(thefile))
+            finally:
+                transfer.disconnect()
 
             logger.debug('Updating transferred file')
             _update_last_transferred_file(thefile, con)
@@ -269,7 +276,7 @@ def _upload_image_file(thefile, mode, con, alt_transfer=None):
 def _check_and_transfer_image(theargs):
     """Looks for new image to transfer and sends it
     """
-    if theargs.mode is DRYRUN_MODE:
+    if theargs.mode == DRYRUN_MODE:
         sys.stdout.write('\n' + DRYRUN_MODE +
                          ' NO CHANGES OR TRANSFERS WILL BE PERFORMED\n')
 
@@ -289,12 +296,18 @@ def _check_and_transfer_image(theargs):
     try:
         datadir = con.get(NcmirToolsConfig.DATASERVER_SECTION,
                           NcmirToolsConfig.DATASERVER_DATADIR)
-        thefile = _get_second_youngest_image_file(datadir)
+        suffix = con.get(NcmirToolsConfig.DATASERVER_SECTION,
+                         NcmirToolsConfig.DATASERVER_IMGSUFFIX)
+        d_to_exclude = con.get(NcmirToolsConfig.DATASERVER_SECTION,
+                               NcmirToolsConfig.DATASERVER_DIRSTOEXCLUDE)
+        d_ex_list = d_to_exclude.split(',')
+        thefile = _get_second_youngest_image_file(datadir, suffix,
+                                                  d_ex_list)
         if thefile is None:
             logger.info('Could not find second youngest file')
             return
 
-        return _upload_image_file(thefile, theargs.mode, con)
+        _upload_image_file(thefile, theargs.mode, con)
     finally:
         if lock is not None:
             lock.release()

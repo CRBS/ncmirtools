@@ -92,11 +92,13 @@ class SftpTransfer(Transfer):
             return
         logger.debug('Connecting via ssh to ' + str(self._get_kioskserver()))
         self._ssh = paramiko.SSHClient()
+        self._ssh.set_missing_host_key_policy(self._get_missing_host_key_policy())
         self._ssh.connect(hostname=self._get_kioskserver(),
                           username=self._get_kioskusername(),
                           pkey=self._get_private_key(),
                           port=self._get_kioskport(),
-                          timeout=self._get_kioskconnecttimeout())
+                          timeout=self._get_kioskconnecttimeout()
+                          )
         logger.debug('Connection completed')
 
     def disconnect(self):
@@ -137,5 +139,5 @@ class SftpTransfer(Transfer):
         logger.info('Transfer error message: ' + str(transfer_err_msg) +
                     ', elapsed time in secs ' + str(duration) +
                     ', bytes transferred' +
-                    bytes_transferred)
+                    str(bytes_transferred))
         return transfer_err_msg, duration, bytes_transferred
