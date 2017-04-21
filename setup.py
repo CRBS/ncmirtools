@@ -34,7 +34,7 @@ setup(
     author_email='churas.camera@gmail.com',
     url='https://github.com/CRBS/ncmirtools',
     packages=[
-        'ncmirtools',
+        'ncmirtools', 'ncmirtools.kiosk',
     ],
     package_dir={'ncmirtools':
                  'ncmirtools'},
