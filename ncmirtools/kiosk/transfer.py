@@ -3,6 +3,7 @@
 __author__ = 'churas'
 
 import os
+import time
 import logging
 import paramiko
 from ncmirtools.config import NcmirToolsConfig
@@ -49,6 +50,8 @@ class SftpTransfer(Transfer):
     def __init__(self, config):
         super(SftpTransfer, self).__init__(config)
         self._altssh = None
+        self._ssh = None
+        self._sftp = None
 
     def _get_private_key(self):
         """Gets private key from config
@@ -87,20 +90,26 @@ class SftpTransfer(Transfer):
             logger.info('Alternate ssh connection set, using instead')
             self._ssh = self._altssh
             return
+        logger.debug('Connecting via ssh to ' + str(self._get_kioskserver()))
         self._ssh = paramiko.SSHClient()
         self._ssh.connect(hostname=self._get_kioskserver(),
                           username=self._get_kioskusername(),
                           pkey=self._get_private_key(),
                           port=self._get_kioskport(),
                           timeout=self._get_kioskconnecttimeout())
+        logger.debug('Connection completed')
 
     def disconnect(self):
         """Disconnects
         """
+        logger.debug('Disconnecting from ssh server ' +
+                     str(self._get_kioskserver()))
         if self._sftp is not None:
             self._sftp.close()
+            self._sftp = None
         if self._ssh is not None:
             self._ssh.close()
+            self._ssh = None
 
     def transfer_file(self, filepath):
         """transfers file
@@ -113,4 +122,20 @@ class SftpTransfer(Transfer):
 
         dest_file = os.path.join(kiosk_dir, os.path.basename(filepath))
         logger.info('Uploading ' + str(filepath) + ' to ' + dest_file)
-        self._sftp.put(filepath, dest_file, confirm=True)
+
+        transfer_err_msg = None
+        start_time = int(time.time())
+        bytes_transferred = 0
+        try:
+            s = self._sftp.put(filepath, dest_file, confirm=True)
+            bytes_transferred = s.st_size
+        except Exception as e:
+            transfer_err_msg = str(e)
+
+        duration = int(time.time()) - start_time
+
+        logger.info('Transfer error message: ' + str(transfer_err_msg) +
+                    ', elapsed time in secs ' + str(duration) +
+                    ', bytes transferred' +
+                    bytes_transferred)
+        return transfer_err_msg, duration, bytes_transferred
