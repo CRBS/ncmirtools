@@ -51,7 +51,8 @@ class TestImagetokiosk(unittest.TestCase):
             try:
                 imagetokiosk._get_lock(temp_dir)
             except OSError as e:
-                self.assertTrue('Is a directory:' in str(e))
+                self.assertTrue('Is a directory:' in str(e) or
+                                'Operation not permitted' in str(e))
 
             # try a valid lock
             lfile = os.path.join(temp_dir, 'somelock')
@@ -258,7 +259,8 @@ class TestImagetokiosk(unittest.TestCase):
             os.utime(four, (701, 701))
 
             res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               '.dm4', ['foodir'])
+                                                               '.dm4',
+                                                               ['foodir'])
             self.assertEqual(res, three)
         finally:
             shutil.rmtree(temp_dir)
@@ -283,7 +285,8 @@ class TestImagetokiosk(unittest.TestCase):
             os.utime(four, (701, 701))
 
             res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               '.dm4', ['foodir'])
+                                                               '.dm4',
+                                                               ['foodir'])
             self.assertEqual(res, onefile)
         finally:
             shutil.rmtree(temp_dir)
@@ -308,7 +311,8 @@ class TestImagetokiosk(unittest.TestCase):
             os.utime(four, (701, 701))
 
             res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               '.dm4', ['foodir'])
+                                                               '.dm4',
+                                                               ['foodir'])
             self.assertEqual(res, onefile)
         finally:
             shutil.rmtree(temp_dir)

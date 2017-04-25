@@ -385,8 +385,8 @@ def main(arglist):
                          lockfile=NcmirToolsConfig.DATASERVER_LOCKFILE,
                          homedir=HOMEDIR_ARG,
                          transferlog=NcmirToolsConfig.DATASERVER_TRANSFERLOG,
-                         ds_ssh=NcmirToolsConfig.DATASERVER_SSH_SECTION,
-                         ssh_key=NcmirToolsConfig.DATASERVER_SSH_KIOSKKEY,
+                         ds_ssh=NcmirToolsConfig.SSH_SECTION,
+                         ssh_key=NcmirToolsConfig.SSH_KIOSKKEY,
                          ssh_user=NcmirToolsConfig.DATASERVER_SSH_KIOSKUSER,
                          config_file=', '.join(con.get_config_files()))
 
