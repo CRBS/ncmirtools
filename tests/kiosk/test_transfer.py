@@ -248,7 +248,64 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         except SSHConnectionError:
             pass
 
+    def test_transfer_dest_dir_is_none(self):
+        t = SftpTransfer(None)
+        t._sftp = 'hi'
+        try:
+            t.transfer_file('/somefile')
+            self.fail('Expected InvalidDestinationDirError')
+        except InvalidDestinationDirError:
+            pass
 
+    def test_transfer_raises_exception(self):
+        con = configparser.ConfigParser()
+        con.add_section(SftpTransfer.SECTION)
+        con.set(SftpTransfer.SECTION,
+                SftpTransfer.DEST_DIR,
+                '/remotedir')
+        t = SftpTransfer(con)
+        t._sftp = Parameters()
+        t._sftp.put = Mock(side_effect=IOError('some error'))
 
+        msg, dur, b_trans = t.transfer_file('/foo')
+        self.assertEqual(msg, 'Caught an exception: IOError : some error')
+
+    def test_transfer_success_with_sftp_set(self):
+        con = configparser.ConfigParser()
+        con.add_section(SftpTransfer.SECTION)
+        con.set(SftpTransfer.SECTION,
+                SftpTransfer.DEST_DIR,
+                '/remotedir')
+        t = SftpTransfer(con)
+        t._sftp = Parameters()
+        mockstat = Parameters()
+        mockstat.st_size = 500
+        t._sftp.put = Mock(return_value=mockstat)
+
+        msg, dur, b_trans = t.transfer_file('/foo')
+        self.assertEqual(msg, None)
+        self.assertTrue(dur >= 0)
+        self.assertEqual(b_trans, 500)
+
+    def test_transfer_success_with_sftp_created_from_ssh(self):
+        con = configparser.ConfigParser()
+        con.add_section(SftpTransfer.SECTION)
+        con.set(SftpTransfer.SECTION,
+                SftpTransfer.DEST_DIR,
+                '/remotedir')
+        t = SftpTransfer(con)
+        mockssh = Parameters()
+        mocksftp = Parameters()
+        mockstat = Parameters()
+        mockstat.st_size = 1500
+        mocksftp.put = Mock(return_value=mockstat)
+        mockssh.open_sftp = Mock(return_value=mocksftp)
+        t.set_alternate_connection(mockssh)
+        t.connect()
+        msg, dur, b_trans = t.transfer_file('/foo')
+        self.assertEqual(msg, None)
+        self.assertTrue(dur >= 0)
+        self.assertEqual(b_trans, 1500)
+        t.disconnect()
 if __name__ == '__main__':
     sys.exit(unittest.main())
