@@ -47,24 +47,6 @@ def _parse_arguments(desc, args):
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help="Set the logging level (default WARNING)",
                         default='WARNING')
-    """
-    parser.add_argument("--" + NcmirToolsConfig.DATASERVER_DATADIR,
-                        help='Data directory to examine '
-                             'this overrides value in ' +
-                             NcmirToolsConfig.UCONFIG_FILE)
-    parser.add_argument("--" + NcmirToolsConfig.DATASERVER_IMGSUFFIX,
-                        help='Suffix to use to determine what '
-                             'images to transfer, overrides value in ' +
-                             NcmirToolsConfig.UCONFIG_FILE)
-    parser.add_argument("--" + NcmirToolsConfig.DATASERVER_DIRSTOEXCLUDE,
-                        help='Comma list of directories to not examine, '
-                             ' overrides value in ' +
-                             NcmirToolsConfig.UCONFIG_FILE)
-    parser.add_argument("--" + NcmirToolsConfig.DATASERVER_LOCKFILE,
-                        help='Path to lockfile,'
-                             ' overrides value in ' +
-                             NcmirToolsConfig.UCONFIG_FILE)
-    """
     parser.add_argument(HOMEDIR_ARG, help='Sets alternate home directory '
                                           'under which the ' +
                                           NcmirToolsConfig.UCONFIG_FILE +
@@ -385,9 +367,9 @@ def main(arglist):
                          lockfile=NcmirToolsConfig.DATASERVER_LOCKFILE,
                          homedir=HOMEDIR_ARG,
                          transferlog=NcmirToolsConfig.DATASERVER_TRANSFERLOG,
-                         ds_ssh=NcmirToolsConfig.SSH_SECTION,
-                         ssh_key=NcmirToolsConfig.SSH_KIOSKKEY,
-                         ssh_user=NcmirToolsConfig.DATASERVER_SSH_KIOSKUSER,
+                         ds_ssh=SftpTransfer.SECTION,
+                         ssh_key=SftpTransfer.KEY,
+                         ssh_user=SftpTransfer.USER,
                          config_file=', '.join(con.get_config_files()))
 
     theargs = _parse_arguments(desc, arglist[1:])
