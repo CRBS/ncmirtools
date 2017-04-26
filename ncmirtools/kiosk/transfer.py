@@ -15,6 +15,17 @@ from ncmirtools.config import NcmirToolsConfig
 logger = logging.getLogger(__name__)
 
 
+class InvalidDestinationDirError(Exception):
+    """Error raised when destination directory is invalid
+    """
+    pass
+
+class SSHConnectionError(Exception):
+    """Error raised when ssh connection is invalid
+    """
+    pass
+
+
 class Transfer(object):
     """Base object to transfer file to remote server
     """
@@ -188,9 +199,16 @@ class SftpTransfer(Transfer):
         """
         if self._sftp is None:
             logger.debug('Creating SFTP connection')
+            if self._ssh is None:
+                raise SSHConnectionError('ssh connection never set.'
+                                         ' connect() must be called '
+                                         'first')
             self._sftp = self._ssh.open_sftp()
 
         dest_dir = self._getdestdir()
+        if dest_dir is None:
+            raise InvalidDestinationDirError('Destination directory '
+                                             'cannot be None')
 
         dest_file = os.path.join(dest_dir, os.path.basename(filepath))
         logger.info('Uploading ' + str(filepath) + ' to ' + dest_file)
