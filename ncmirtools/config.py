@@ -36,7 +36,7 @@ def setup_logging(thelogger,
     logging.getLogger('ncmirtools.mpidir').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.lookup').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.imagetokiosk').setLevel(numericloglevel)
-
+    logging.getLogger('ncmirtools.transfer').setLevel(numericloglevel)
 
 class ConfigMissingError(Exception):
     """Raised if configuration file is missing
@@ -65,13 +65,6 @@ class NcmirToolsConfig(object):
     DATASERVER_KIOSKDIR = 'kioskdir'
     DATASERVER_TRANSFERLOG = 'transferlogfile'
     DATASERVER_LOCKFILE = 'lockfile'
-    SSH_SECTION = 'dataserver_ssh'
-    SSH_KIOSKKEY = 'kioskprivatekey'
-    DATASERVER_SSH_KIOSKUSER = 'kioskusername'
-    DATASERVER_SSH_KIOSKSERVERPORT = 'kioskserverport'
-    DATASERVER_SSH_KIOSK_CON_TIMEOUT = 'kioskconnecttimeout'
-    DATASERVER_SSH_KIOSK_CHANNEL_TIMEOUT = 'kioskchanneltimeout'
-    DATASERVER_SSH_KIOSK_HOST_KEY_POLICY = 'kioskhostkeypolicy'
 
     ETC_DIR = os.path.sep + 'etc'
 
