@@ -9,8 +9,6 @@ import paramiko
 from configparser import NoOptionError
 from configparser import NoSectionError
 
-from ncmirtools.config import NcmirToolsConfig
-
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +218,9 @@ class SftpTransfer(Transfer):
             s = self._sftp.put(filepath, dest_file, confirm=True)
             bytes_transferred = s.st_size
         except Exception as e:
-            transfer_err_msg = str(e)
+            logger.exception('Caught exception performing sftp put')
+            transfer_err_msg = ('Caught an exception: ' +
+                                str(e.__class__.__name__) + ' : ' + str(e))
 
         duration = int(time.time()) - start_time
 
