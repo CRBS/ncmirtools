@@ -50,8 +50,7 @@ def _parse_arguments(desc, args):
     parser.add_argument(HOMEDIR_ARG, help='Sets alternate home directory '
                                           'under which the ' +
                                           NcmirToolsConfig.UCONFIG_FILE +
-                                          ' is loaded (default ~)',
-                        default='~')
+                                          ' is loaded (default ~)')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' + ncmirtools.__version__))
 
@@ -88,7 +87,7 @@ def _get_lock(lockfile):
                             " is running")
 
     lock.break_lock()
-    logger.info("Acquiring lock")
+    logger.debug("Acquiring lock")
     lock.acquire(timeout=10)
     return lock
 
@@ -188,7 +187,9 @@ def _get_last_transferred_file(con):
 
     f = open(tlog, 'r')
     try:
-        return f.readline().rstrip()
+        last_trans_file = f.readline().rstrip()
+        logger.info('Last transferred file: ' + str(last_trans_file))
+        return last_trans_file
     finally:
         f.close()
 
@@ -233,14 +234,18 @@ def _upload_image_file(thefile, mode, con, alt_transfer=None):
             transfer = alt_transfer
 
         if mode == RUN_MODE:
-
             try:
                 transfer.connect()
-                logger.debug('Transferring ' + str(thefile))
-                status, duration, bytes_transferred = transfer.transfer_file(thefile)
-                logger.info('Status ' + str(status) + ' duration ' + str(duration) +
-                            ' bytes transferred ' + str(bytes_transferred))
-                logger.debug('Transfer complete of ' + str(thefile))
+                sys.stdout.write('Transferring ' + str(thefile) + '\n')
+                size_b = os.path.getsize(thefile)
+                logger.info('File is ' + str(size_b) +
+                            ' bytes')
+                (status, duration,
+                 bytes_transferred) = transfer.transfer_file(thefile)
+                logger.info('Status (None means success): ' + str(status) +
+                            ', duration: ' + str(duration) +
+                            ' seconds, bytes transferred: ' +
+                            str(bytes_transferred))
             finally:
                 transfer.disconnect()
 
@@ -251,7 +256,8 @@ def _upload_image_file(thefile, mode, con, alt_transfer=None):
             sys.stdout.write('File that would have been transferred: ' +
                              thefile + '\n\n')
     else:
-        logger.debug('File already transferred')
+        sys.stdout.write('According to last transfer log, ' +
+                         str(thefile) + ' already transferred\n')
     return
 
 
@@ -292,6 +298,7 @@ def _check_and_transfer_image(theargs):
         _upload_image_file(thefile, theargs.mode, con)
     finally:
         if lock is not None:
+            logger.debug('Releasing lock')
             lock.release()
 
 
@@ -327,8 +334,6 @@ def main(arglist):
               {datadir}          = <directory to monitor>
               {imagesuffix}      = <suffix of images ie .dm4>
               {d_exclude}    = <comma delimited list of directory paths>
-              {kioskserver}      = <remote kiosk server>
-              {kioskdir}         = <remote kiosk directory>
               {transferlog}  = <file which contains last file transferred,
                                  prevents duplicate transfer of files>
               {lockfile}         = <path to lockfile,
@@ -336,8 +341,10 @@ def main(arglist):
 
               [{ds_ssh}]
 
-              {ssh_key}  = <path to private ssh key>
-              {ssh_user}    = <ssh username>
+              {ssh_key}      = <path to private ssh key>
+              {ssh_user}         = <ssh username>
+              {kioskserver}             = <remote kiosk server>
+              {kioskdir}  = <remote kiosk directory>
 
 
               Example configuration file:
@@ -347,23 +354,23 @@ def main(arglist):
               {datadir}          = /cygdrive/e/data
               {imagesuffix}      = .dm4
               {d_exclude}    = $RECYCLE.BIN
-              {kioskserver}      = foo.com
-              {kioskdir}         = /data
-              {transferlog}  = /cygdrive/home/foo/transfer.log
+              {transferlog}  = /cygdrive/home/foo/last_transferred_file.log
               {lockfile}         = /cygdrive/home/foo/mylockfile.pid
 
               [{ds_ssh}]
 
-              {ssh_key}  = /cygdrive/home/foo/.ssh/mykey
-              {ssh_user}    = foo
+              {ssh_key}      = /cygdrive/home/foo/.ssh/mykey
+              {ssh_user}         = foo
+              {kioskserver}             = foo.com
+              {kioskdir}  = /data
 
               """.format(version=ncmirtools.__version__,
                          ds=NcmirToolsConfig.DATASERVER_SECTION,
                          datadir=NcmirToolsConfig.DATASERVER_DATADIR,
                          imagesuffix=NcmirToolsConfig.DATASERVER_IMGSUFFIX,
                          d_exclude=NcmirToolsConfig.DATASERVER_DIRSTOEXCLUDE,
-                         kioskdir=NcmirToolsConfig.DATASERVER_KIOSKDIR,
-                         kioskserver=NcmirToolsConfig.DATASERVER_KIOSKSERVER,
+                         kioskdir=SftpTransfer.DEST_DIR,
+                         kioskserver=SftpTransfer.HOST,
                          lockfile=NcmirToolsConfig.DATASERVER_LOCKFILE,
                          homedir=HOMEDIR_ARG,
                          transferlog=NcmirToolsConfig.DATASERVER_TRANSFERLOG,
