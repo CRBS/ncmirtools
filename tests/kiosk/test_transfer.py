@@ -14,12 +14,19 @@ import sys
 import unittest
 import os
 import configparser
+from mock import Mock
+
+from ncmirtools.imagetokiosk import Parameters
 from configparser import NoOptionError
 from configparser import NoSectionError
 
 from ncmirtools.config import NcmirToolsConfig
+from ncmirtools.kiosk.transfer import InvalidDestinationDirError
+from ncmirtools.kiosk.transfer import SSHConnectionError
+
 from ncmirtools.kiosk.transfer import Transfer
 from ncmirtools.kiosk.transfer import SftpTransfer
+
 
 class TestTransfer(unittest.TestCase):
 
@@ -219,6 +226,8 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
 
     def test_disconnect_without_connect_call(self):
         t = SftpTransfer(None)
+        t._sftp = Parameters()
+        t._ssh = Parameters()
         t.disconnect()
         self.assertEqual(t._sftp, None)
         self.assertEqual(t._ssh, None)
@@ -226,10 +235,19 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
     def test_disconnect_where_both_cause_exceptions(self):
         t = SftpTransfer(None)
         t._sftp = 'foo'
-        t._ssh ='hi'
+        t._ssh = 'hi'
         t.disconnect()
         self.assertEqual(t._sftp, None)
         self.assertEqual(t._ssh, None)
+
+    def test_transfer_file_before_connect(self):
+        t = SftpTransfer(None)
+        try:
+            t.transfer_file('/foo/hi.txt')
+            self.fail('Expected SSHConnectionError')
+        except SSHConnectionError:
+            pass
+
 
 
 if __name__ == '__main__':
