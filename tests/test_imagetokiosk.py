@@ -16,9 +16,12 @@ import unittest
 import configparser
 from configparser import NoOptionError
 from configparser import NoSectionError
+from mock import Mock
+
 
 from ncmirtools import imagetokiosk
 from ncmirtools.config import NcmirToolsConfig
+from ncmirtools.kiosk.transfer import SftpTransfer
 
 
 class TestImagetokiosk(unittest.TestCase):
@@ -33,7 +36,6 @@ class TestImagetokiosk(unittest.TestCase):
         pargs = imagetokiosk._parse_arguments('some description', ['run'])
         self.assertEqual(pargs.mode, 'run')
         self.assertEqual(pargs.loglevel, 'WARNING')
-        self.assertEqual(pargs.homedir, '~')
 
         pargs = imagetokiosk._parse_arguments('some description',
                                               ['dryrun',
@@ -74,246 +76,6 @@ class TestImagetokiosk(unittest.TestCase):
             except Exception as e:
                 self.assertTrue('imagetokiosk.py with pid ' in str(e))
 
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_get_files_in_directory_generator_none_passed_in(self):
-
-        count = 0
-        for item in imagetokiosk._get_files_in_directory_generator(None, None):
-            count += 1
-        self.assertEqual(count, 0)
-
-    def test_get_files_in_directory_generator_on_empty_dir(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-
-            count = 0
-            for item in imagetokiosk._get_files_in_directory_generator(temp_dir,
-                                                                       None):
-                count += 1
-            self.assertEqual(count, 0)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_get_files_in_directory_generator_on_one_file(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            count = 0
-            onefile = os.path.join(temp_dir, 'foo.txt')
-            open(onefile, 'a').close()
-
-            for item in imagetokiosk._get_files_in_directory_generator(onefile,
-                                                                       None):
-                self.assertEqual(item, onefile)
-                count += 1
-
-            self.assertEqual(count, 1)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_get_files_in_directory_generator_on_dir_with_file(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            count = 0
-            onefile = os.path.join(temp_dir, 'foo.txt')
-            open(onefile, 'a').close()
-
-            for item in imagetokiosk._get_files_in_directory_generator(temp_dir,
-                                                                       None):
-                self.assertEqual(item, onefile)
-                count += 1
-
-            self.assertEqual(count, 1)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_get_files_in_directory_generator_on_multiple_files(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            one = os.path.join(temp_dir, '1.txt')
-            two = os.path.join(temp_dir, '2.txt')
-            three = os.path.join(temp_dir, '3.txt')
-            open(one, 'a').close()
-            open(two, 'a').close()
-            open(three, 'a').close()
-            thefiles = []
-            for item in imagetokiosk._get_files_in_directory_generator(temp_dir,
-                                                                       []):
-                thefiles.append(item)
-            self.assertTrue(one in thefiles)
-            self.assertTrue(two in thefiles)
-            self.assertTrue(three in thefiles)
-            self.assertEqual(len(thefiles), 3)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_get_files_in_directory_generator_on_multiple_directories(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            one = os.path.join(temp_dir, '1.txt')
-            two = os.path.join(temp_dir, '2.txt')
-            subdir = os.path.join(temp_dir, 'foodir')
-            os.makedirs(subdir, mode=0o0775)
-            three = os.path.join(subdir, '3.txt')
-            four = os.path.join(subdir, '4.txt')
-            open(one, 'a').close()
-            open(two, 'a').close()
-            open(three, 'a').close()
-            open(four, 'a').close()
-            thefiles = []
-            for item in imagetokiosk._get_files_in_directory_generator(temp_dir,
-                                                                       None):
-                thefiles.append(item)
-            self.assertTrue(one in thefiles)
-            self.assertTrue(two in thefiles)
-            self.assertTrue(three in thefiles)
-            self.assertTrue(four in thefiles)
-            self.assertEqual(len(thefiles), 4)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_get_files_in_directory_generator_with_exclude(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            one = os.path.join(temp_dir, '1.txt')
-            two = os.path.join(temp_dir, '2.txt')
-            subdir = os.path.join(temp_dir, 'foodir')
-            os.makedirs(subdir, mode=0o0775)
-            three = os.path.join(subdir, '3.txt')
-            four = os.path.join(subdir, '4.txt')
-            open(one, 'a').close()
-            open(two, 'a').close()
-            open(three, 'a').close()
-            open(four, 'a').close()
-            thefiles = []
-            for item in imagetokiosk._get_files_in_directory_generator(temp_dir,
-                                                                       ['foodir',
-                                                                        'blah']):
-                thefiles.append(item)
-            self.assertTrue(one in thefiles)
-            self.assertTrue(two in thefiles)
-            self.assertFalse(three in thefiles)
-            self.assertFalse(four in thefiles)
-            self.assertEqual(len(thefiles), 2)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_get_second_youngest_image_file_searchdir_is_none(self):
-        res = imagetokiosk._get_second_youngest_image_file(None, None, None)
-        self.assertEqual(res, None)
-
-    def test_get_second_youngest_image_file_searchdir_nofiles(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               None, ['foo'])
-            self.assertEqual(res, None)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_second_youngest_image_file_searchdir_onefile(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            onefile = os.path.join(temp_dir, 'foo.dm4')
-            open(onefile, 'a').close()
-            res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               'dm4', ['foo'])
-            self.assertEqual(res, None)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_second_youngest_image_file_searchdir_twofiles(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            onefile = os.path.join(temp_dir, 'foo.dm4')
-            open(onefile, 'a').close()
-            os.utime(onefile, (100, 100))
-            twofile = os.path.join(temp_dir, 'foo2.dm4')
-            open(twofile, 'a').close()
-            os.utime(onefile, (200, 200))
-
-            res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               '.dm4', ['foo'])
-            self.assertEqual(res, onefile)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_second_youngest_image_file_searchdir_fourfilestwodirs(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            onefile = os.path.join(temp_dir, 'foo.dm4')
-            open(onefile, 'a').close()
-            os.utime(onefile, (500, 500))
-            twofile = os.path.join(temp_dir, 'foo2.dm4')
-            open(twofile, 'a').close()
-            os.utime(twofile, (510, 510))
-
-            subdir = os.path.join(temp_dir, 'anotherdir')
-            os.makedirs(subdir, mode=0o0775)
-            three = os.path.join(subdir, '3.dm4')
-            open(three, 'a').close()
-            os.utime(three, (700, 700))
-            four = os.path.join(subdir, '4.dm4')
-            open(four, 'a').close()
-            os.utime(four, (701, 701))
-
-            res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               '.dm4',
-                                                               ['foodir'])
-            self.assertEqual(res, three)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_second_youngest_image_file_searchdir_suffix_test(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            onefile = os.path.join(temp_dir, 'foo.dm4')
-            open(onefile, 'a').close()
-            os.utime(onefile, (500, 500))
-            twofile = os.path.join(temp_dir, 'foo2.dm4')
-            open(twofile, 'a').close()
-            os.utime(twofile, (510, 510))
-
-            subdir = os.path.join(temp_dir, 'dir')
-            os.makedirs(subdir, mode=0o0775)
-            three = os.path.join(subdir, '3.dm5')
-            open(three, 'a').close()
-            os.utime(three, (700, 700))
-            four = os.path.join(subdir, 'dm4.txt')
-            open(four, 'a').close()
-            os.utime(four, (701, 701))
-
-            res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               '.dm4',
-                                                               ['foodir'])
-            self.assertEqual(res, onefile)
-        finally:
-            shutil.rmtree(temp_dir)
-
-    def test_second_youngest_image_file_searchdir_exclude_dir_test(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            onefile = os.path.join(temp_dir, 'foo.dm4')
-            open(onefile, 'a').close()
-            os.utime(onefile, (500, 500))
-            twofile = os.path.join(temp_dir, 'foo2.dm4')
-            open(twofile, 'a').close()
-            os.utime(twofile, (510, 510))
-
-            subdir = os.path.join(temp_dir, 'foodir')
-            os.makedirs(subdir, mode=0o0775)
-            three = os.path.join(subdir, '3.dm4')
-            open(three, 'a').close()
-            os.utime(three, (700, 700))
-            four = os.path.join(subdir, '4.dm4')
-            open(four, 'a').close()
-            os.utime(four, (701, 701))
-
-            res = imagetokiosk._get_second_youngest_image_file(temp_dir,
-                                                               '.dm4',
-                                                               ['foodir'])
-            self.assertEqual(res, onefile)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -361,7 +123,6 @@ class TestImagetokiosk(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             imagetokiosk._update_last_transferred_file(None, None)
-
 
             lfile = os.path.join(temp_dir, 'logfile')
 
@@ -412,6 +173,172 @@ class TestImagetokiosk(unittest.TestCase):
             self.assertEqual(f.read(), '')
             f.close()
 
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_run_help_string(self):
+        p = imagetokiosk.Parameters()
+        p.program = 'foo'
+        self.assertEqual(imagetokiosk._get_run_help_string(p),
+                         'Please run foo -h for more information.')
+
+    def test_get_and_verifyconfigparserconfig(self):
+        p = imagetokiosk.Parameters()
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # test where no config
+            p.homedir = temp_dir
+            con, errmsg = imagetokiosk._get_and_verifyconfigparserconfig(p)
+            self.assertEqual(con, None)
+            self.assertTrue('No configuration file found ' in errmsg)
+
+            # test with no dataserver section
+            c = configparser.ConfigParser()
+            c.set(configparser.DEFAULTSECT, 'hi', 'foo')
+            cfile = os.path.join(temp_dir, NcmirToolsConfig.UCONFIG_FILE)
+            f = open(cfile, 'w')
+            c.write(f)
+            f.flush()
+            f.close()
+            p.program = 'foo'
+            con, errmsg = imagetokiosk._get_and_verifyconfigparserconfig(p)
+            self.assertEqual(con, None)
+            self.assertEqual(errmsg, 'No [dataserver] section found in '
+                                     'configuration. Please run foo -h for '
+                                     'more information.')
+
+            # test with no lockfile option
+            c.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            f = open(cfile, 'w')
+            c.write(f)
+            f.flush()
+            f.close()
+            con, errmsg = imagetokiosk._get_and_verifyconfigparserconfig(p)
+            self.assertEqual(con, None)
+            self.assertEqual(errmsg, 'No lockfile option found in '
+                                     'configuration. Please run foo -h for '
+                                     'more information.')
+
+            # valid
+            c.set(NcmirToolsConfig.DATASERVER_SECTION,
+                  NcmirToolsConfig.DATASERVER_LOCKFILE,
+                  'foo')
+            f = open(cfile, 'w')
+            c.write(f)
+            f.flush()
+            f.close()
+            con, errmsg = imagetokiosk._get_and_verifyconfigparserconfig(p)
+            self.assertEqual(errmsg, None)
+            self.assertTrue(con is not None)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_file_finder(self):
+        # test with no config
+        con = configparser.ConfigParser()
+        p = imagetokiosk.Parameters()
+        p.program = 'foo'
+        filefinder, errmsg = imagetokiosk._get_file_finder(p, con)
+        self.assertEqual(filefinder, None)
+        self.assertTrue('found in configuration' in errmsg)
+
+    def test_upload_image_file_get_sftptransfer(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            p = imagetokiosk.Parameters()
+            p.mode = imagetokiosk.RUN_MODE
+            p.program = 'foo'
+            logfile = os.path.join(temp_dir, 'logfile.txt')
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_TRANSFERLOG, logfile)
+
+            fakefile = os.path.join(temp_dir, 'foo.txt')
+            open(fakefile, 'a').close()
+            res = imagetokiosk._upload_image_file(p, fakefile, con)
+            self.assertEqual(res, 4)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_image_file_success(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            p = imagetokiosk.Parameters()
+            p.mode = imagetokiosk.RUN_MODE
+            logfile = os.path.join(temp_dir, 'logfile.txt')
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_TRANSFERLOG, logfile)
+
+            fakefile = os.path.join(temp_dir, 'foo.txt')
+            open(fakefile, 'a').close()
+            mt = SftpTransfer('foo.com', '/foo')
+            mockssh = imagetokiosk.Parameters()
+            mocksftp = imagetokiosk.Parameters()
+            mockst = imagetokiosk.Parameters()
+            mockst.st_size = 500
+            mocksftp.put = Mock(return_value=mockst)
+            mockssh.open_sftp = Mock(return_value=mocksftp)
+            mt.set_alternate_connection(mockssh)
+            res = imagetokiosk._upload_image_file(p, fakefile, con,
+                                                  alt_transfer=mt)
+            self.assertEqual(res, 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_image_file_success_dryru(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            p = imagetokiosk.Parameters()
+            p.mode = imagetokiosk.DRYRUN_MODE
+            logfile = os.path.join(temp_dir, 'logfile.txt')
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_TRANSFERLOG, logfile)
+
+            fakefile = os.path.join(temp_dir, 'foo.txt')
+            open(fakefile, 'a').close()
+            mt = SftpTransfer('foo.com', '/foo')
+            mockssh = imagetokiosk.Parameters()
+            mocksftp = imagetokiosk.Parameters()
+            mockst = imagetokiosk.Parameters()
+            mockst.st_size = 500
+            mocksftp.put = Mock(return_value=mockst)
+            mockssh.open_sftp = Mock(return_value=mocksftp)
+            mt.set_alternate_connection(mockssh)
+            res = imagetokiosk._upload_image_file(p, fakefile, con,
+                                                  alt_transfer=mt)
+            self.assertEqual(res, 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_image_file_fail(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            p = imagetokiosk.Parameters()
+            p.mode = imagetokiosk.RUN_MODE
+            logfile = os.path.join(temp_dir, 'logfile.txt')
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_TRANSFERLOG, logfile)
+
+            fakefile = os.path.join(temp_dir, 'foo.txt')
+            open(fakefile, 'a').close()
+            mt = SftpTransfer('foo.com', '/foo')
+            mockssh = imagetokiosk.Parameters()
+            mocksftp = imagetokiosk.Parameters()
+            mockst = imagetokiosk.Parameters()
+            mockst.st_size = 500
+            mocksftp.put = Mock(side_effect=IOError('some error'))
+            mockssh.open_sftp = Mock(return_value=mocksftp)
+            mt.set_alternate_connection(mockssh)
+            res = imagetokiosk._upload_image_file(p, fakefile, con,
+                                                  alt_transfer=mt)
+            self.assertEqual(res, 1)
         finally:
             shutil.rmtree(temp_dir)
 

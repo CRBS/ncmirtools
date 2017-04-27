@@ -9,8 +9,11 @@ import logging
 import psutil
 
 from ncmirtools.config import NcmirToolsConfig
+from ncmirtools.config import ConfigMissingError
 from ncmirtools import config
 from ncmirtools.kiosk.transfer import SftpTransfer
+from ncmirtools.kiosk.transfer import SftpTransferFromConfigFactory
+from ncmirtools.kiosk.datafinder import SecondYoungestFromConfigFactory
 
 from lockfile.pidlockfile import PIDLockFile
 
@@ -92,81 +95,6 @@ def _get_lock(lockfile):
     return lock
 
 
-def _get_files_in_directory_generator(path,
-                                      list_of_dirs_to_exclude):
-    """Generator that gets files in directory"""
-
-    if path is None:
-        logger.error('Path is None, returning nothing')
-        return
-
-    # first time we encounter a file yield it
-    if os.path.isfile(path):
-        yield path
-
-    # second time we encounter a file just return
-    if os.path.isfile(path):
-        return
-
-    if not os.path.isdir(path):
-        return
-
-    logger.debug(path + ' is a directory looking for files within')
-    for entry in os.listdir(path):
-        fullpath = os.path.join(path, entry)
-        if os.path.isfile(fullpath):
-            yield fullpath
-        if os.path.isdir(fullpath):
-            if list_of_dirs_to_exclude is None or \
-                            os.path.basename(fullpath) not in \
-                            list_of_dirs_to_exclude:
-                for aentry in _get_files_in_directory_generator(fullpath,
-                                                                list_of_dirs_to_exclude):
-                    yield aentry
-
-
-def _get_second_youngest_image_file(searchdir, suffix, list_of_dirs_to_exclude):
-    """Looks for 2nd youngest file in `searchdir` directory path
-    :param searchdir: directory to examine
-    :param suffix: Only consider files with this suffix
-    :param list_of_dirs_to_exclude: List of directory paths to
-                                    exclude using endswith match on directory
-    """
-    if searchdir is None:
-        logger.error('searchdir is none')
-        return None
-
-    curyoungest_file = None
-    curyoungest_file_mtime = 0
-    secondyoungest_file = None
-    # walk through all files in file system skipping files that
-    # do NOT match `suffix`
-    # Also exclude any paths
-    file_count = 0
-    files_wrong_suffix_count = 0
-    start_time = int(time.time())
-    for img_file in _get_files_in_directory_generator(searchdir,
-                                                      list_of_dirs_to_exclude):
-
-        if suffix is not None and not img_file.endswith(suffix):
-            files_wrong_suffix_count += 1
-            continue
-
-        file_count += 1
-        file_mtime = os.path.getmtime(img_file)
-        if file_mtime > curyoungest_file_mtime:
-            secondyoungest_file = curyoungest_file
-            curyoungest_file = img_file
-            curyoungest_file_mtime = file_mtime
-
-    duration = int(time.time()) - start_time
-    logger.info('Search took ' + str(duration) + ' seconds. Found ' +
-                str(file_count) + ' eligible files and ' +
-                str(files_wrong_suffix_count) +
-                ' files with invalid suffix')
-    return secondyoungest_file
-
-
 def _get_last_transferred_file(con):
     """Gets last transferred file from transferlogfile
     :param con: ConfigParser object which should have
@@ -219,87 +147,160 @@ def _update_last_transferred_file(thefile, con):
         logger.exception('Problems writing data to logfile: ' + str(thefile))
 
 
-def _upload_image_file(thefile, mode, con, alt_transfer=None):
+def _upload_image_file(theargs, thefile, con, alt_transfer=None):
     """Uploads image file and logs it so we don't try to upload
        the same file twice
     """
     last_file = _get_last_transferred_file(con)
     if last_file is None or last_file != thefile:
-        logger.info('Transferring file')
         if alt_transfer is None:
             logger.debug('Creating SftpTransfer object')
-            transfer = SftpTransfer(con)
+            fac = SftpTransferFromConfigFactory(con)
+            transfer, errmsg = fac.get_sftptransfer()
+            if transfer is None:
+                sys.stderr.write(errmsg + _get_run_help_string(theargs) + '\n')
+                return 4
         else:
             logger.debug('Using alternate transfer object passed in')
             transfer = alt_transfer
 
-        if mode == RUN_MODE:
-            try:
-                transfer.connect()
-                sys.stdout.write('Transferring ' + str(thefile) + '\n')
-                size_b = os.path.getsize(thefile)
-                logger.info('File is ' + str(size_b) +
-                            ' bytes')
+        try:
+            logger.debug('Connecting to remote server')
+            transfer.connect()
+            size_b = os.path.getsize(thefile)
+            sys.stdout.write('\nTransferring ' + str(thefile) +
+                             ' which is ' + str(size_b) + ' bytes\n')
+            size_b = os.path.getsize(thefile)
+            logger.info('File is ' + str(size_b) +
+                        ' bytes')
+
+            if theargs.mode == RUN_MODE:
                 (status, duration,
                  bytes_transferred) = transfer.transfer_file(thefile)
                 logger.info('Status (None means success): ' + str(status) +
                             ', duration: ' + str(duration) +
                             ' seconds, bytes transferred: ' +
                             str(bytes_transferred))
-            finally:
-                transfer.disconnect()
 
-            logger.debug('Updating transferred file')
-            _update_last_transferred_file(thefile, con)
-        else:
-            logger.info(DRYRUN_MODE + ' mode')
-            sys.stdout.write('File that would have been transferred: ' +
-                             thefile + '\n\n')
+                if status is None:
+                    sys.stdout.write('After ' + str(duration) +
+                                     ' seconds. Transfer succeeded.\n')
+                    logger.debug('Updating transferred file')
+                    _update_last_transferred_file(thefile, con)
+                    return 0
+                else:
+                    sys.stdout.write('After ' + str(duration) +
+                                     ' seconds. Transfer failed: ' +
+                                     str(status) + '\n')
+                    return 1
+
+            else:
+                sys.stdout.write('File that would have been transferred: ' +
+                                 thefile + '\n')
+
+        finally:
+            logger.debug('Disconnecting from remote server')
+            transfer.disconnect()
     else:
         sys.stdout.write('According to last transfer log, ' +
                          str(thefile) + ' already transferred\n')
-    return
+    return 0
+
+def _get_file_finder(theargs, con):
+    """Gets file finder based on arguments and configuration
+       set in `theargs` right now this will always be
+       SecondYoungest finder
+
+       :returns: tuple (SecondYoungest, None) upon success or
+                 (None, 'error msg as str') upon failure
+    """
+    fac = SecondYoungestFromConfigFactory(con)
+    filefinder, errmsg = fac.get_file_finder()
+    if errmsg is not None:
+        new_errmsg = errmsg + _get_run_help_string(theargs)
+        return None, new_errmsg
+
+    return filefinder, None
 
 
 def _check_and_transfer_image(theargs):
     """Looks for new image to transfer and sends it
     """
     if theargs.mode == DRYRUN_MODE:
-        sys.stdout.write('\n' + DRYRUN_MODE +
-                         ' NO CHANGES OR TRANSFERS WILL BE PERFORMED\n')
+        sys.stdout.write(DRYRUN_MODE.upper() +
+                         ' MODE NO CHANGES OR TRANSFERS WILL BE PERFORMED\n')
 
-    config = NcmirToolsConfig()
-    try:
-        if theargs.homedir is not None:
-            logger.debug('Setting home directory to: ' + theargs.homedir)
-            config.set_home_directory(theargs.homedir)
-    except AttributeError:
-        logger.debug('Caught AttributeError when examining ' +
-                     HOMEDIR_ARG + ' value')
+    con, errmsg = _get_and_verifyconfigparserconfig(theargs)
+    if errmsg is not None:
+        sys.stderr.write(errmsg + '\n')
+        return 2
 
-    con = config.get_config()
+    filefinder, errmsg = _get_file_finder(theargs, con)
+    if errmsg is not None:
+        sys.stderr.write(errmsg + '\n')
+        return 3
+
     lockfile = con.get(NcmirToolsConfig.DATASERVER_SECTION,
                        NcmirToolsConfig.DATASERVER_LOCKFILE)
     lock = _get_lock(lockfile)
     try:
-        datadir = con.get(NcmirToolsConfig.DATASERVER_SECTION,
-                          NcmirToolsConfig.DATASERVER_DATADIR)
-        suffix = con.get(NcmirToolsConfig.DATASERVER_SECTION,
-                         NcmirToolsConfig.DATASERVER_IMGSUFFIX)
-        d_to_exclude = con.get(NcmirToolsConfig.DATASERVER_SECTION,
-                               NcmirToolsConfig.DATASERVER_DIRSTOEXCLUDE)
-        d_ex_list = d_to_exclude.split(',')
-        thefile = _get_second_youngest_image_file(datadir, suffix,
-                                                  d_ex_list)
+        thefile = filefinder.get_next_file()
         if thefile is None:
-            logger.info('Could not find second youngest file')
-            return
+            sys.stdout.write('Did not find a file to transfer\n')
+            return 0
 
-        _upload_image_file(thefile, theargs.mode, con)
+        return _upload_image_file(theargs, thefile, con)
     finally:
         if lock is not None:
             logger.debug('Releasing lock')
             lock.release()
+
+
+def _get_run_help_string(theargs):
+    """Generates humanreadable string telling user how to run
+       program with -h flag to display help information
+    :param theargs: object returned from _parse_arguments() which
+                    should have theargs.program set to script name
+    :returns: human readable string telling user how to invoke help.
+              Ex: Please run <program> -h for more information.
+    """
+    return 'Please run ' + theargs.program + ' -h ' + 'for more information.'
+
+
+def _get_and_verifyconfigparserconfig(theargs):
+    """Loads configuration
+    :param theargs: Object with parameters set from _parse_arguments()
+                    This method just looks at theargs.homedir and
+                    if it is set the value of theargs.homedir is
+                    used as the default home directory for loading
+                    configuration file
+    :returns configparse.ConfigParser object
+    """
+    config = NcmirToolsConfig()
+    try:
+        if theargs.homedir is not None:
+            logger.info('Setting home directory to: ' + theargs.homedir)
+            config.set_home_directory(theargs.homedir)
+    except AttributeError:
+        logger.debug('Caught AttributeError when examining ' +
+                     HOMEDIR_ARG + ' value')
+    try:
+        con = config.get_config()
+    except ConfigMissingError as e:
+        return None, str(e)
+
+    if con.has_section(NcmirToolsConfig.DATASERVER_SECTION) is False:
+        return None, ('No [' + NcmirToolsConfig.DATASERVER_SECTION +
+                      '] section found in configuration. ' +
+                      _get_run_help_string(theargs))
+
+    if con.has_option(NcmirToolsConfig.DATASERVER_SECTION,
+                      NcmirToolsConfig.DATASERVER_LOCKFILE) is False:
+        return None, ('No ' + NcmirToolsConfig.DATASERVER_LOCKFILE +
+                      ' option found in configuration. ' +
+                      _get_run_help_string(theargs))
+
+    return con, None
 
 
 def main(arglist):
@@ -308,13 +309,46 @@ def main(arglist):
               Version {version}
 
               Using a configuration file explained below this script
-              looks for the second youngest file matching a given suffix.
+              looks for the second youngest file under a configuration
+              specified directory matching a given suffix.
               That file is then transferred to the remote server if it was
-              NOT transferred in the previous invocation of this script.
+              NOT transferred in the previous invocations of this script.
 
-              The first argument in this script denotes whether to
-              perform the transfer or just output to standard out the
-              file that would be transferred.
+              The first argument denotes the mode of operation. Currently
+              two modes are supported ({run}|{dryrun})
+
+              In "{run}" mode the following line will be output to standard
+              out if a file is transferred:
+
+              Transferring /data/21.dm4 which is X bytes
+
+              With the following line output upon success:
+
+              After X seconds. Transfer succeeded.
+
+              Upon failure:
+
+              After X seconds. Transfer failed: (reason for failure):
+
+              or a python stack trace will be output for an uncaught error.
+
+
+              If file has been transferred then this will be output:
+
+              According to last transfer log, /data/21.dm4 already transferred
+
+              If script could not find the second youngest file:
+
+              Did not find a file to transfer
+
+              In "{dryrun}" mode this script still connects to the remote
+              server, but no transfer will be performed and the
+              following line will be output to standard out otherwise
+              output will match that described in {run} mode:
+
+              {dryrunupper} MODE NO CHANGES OR TRANSFERS WILL BE PERFORMED
+
+
 
               NOTE:
 
@@ -369,14 +403,17 @@ def main(arglist):
                          datadir=NcmirToolsConfig.DATASERVER_DATADIR,
                          imagesuffix=NcmirToolsConfig.DATASERVER_IMGSUFFIX,
                          d_exclude=NcmirToolsConfig.DATASERVER_DIRSTOEXCLUDE,
-                         kioskdir=SftpTransfer.DEST_DIR,
-                         kioskserver=SftpTransfer.HOST,
+                         kioskdir=SftpTransferFromConfigFactory.DEST_DIR,
+                         kioskserver=SftpTransferFromConfigFactory.HOST,
                          lockfile=NcmirToolsConfig.DATASERVER_LOCKFILE,
                          homedir=HOMEDIR_ARG,
                          transferlog=NcmirToolsConfig.DATASERVER_TRANSFERLOG,
-                         ds_ssh=SftpTransfer.SECTION,
-                         ssh_key=SftpTransfer.KEY,
-                         ssh_user=SftpTransfer.USER,
+                         ds_ssh=SftpTransferFromConfigFactory.SECTION,
+                         ssh_key=SftpTransferFromConfigFactory.KEY,
+                         ssh_user=SftpTransferFromConfigFactory.USER,
+                         run=RUN_MODE,
+                         dryrun=DRYRUN_MODE,
+                         dryrunupper=DRYRUN_MODE.upper(),
                          config_file=', '.join(con.get_config_files()))
 
     theargs = _parse_arguments(desc, arglist[1:])
@@ -384,7 +421,7 @@ def main(arglist):
     theargs.version = ncmirtools.__version__
     config.setup_logging(logger, loglevel=theargs.loglevel)
     try:
-        _check_and_transfer_image(theargs)
+        return _check_and_transfer_image(theargs)
     finally:
         logging.shutdown()
 
