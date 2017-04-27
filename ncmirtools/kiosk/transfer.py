@@ -27,8 +27,8 @@ class SSHConnectionError(Exception):
 class Transfer(object):
     """Base object to transfer file to remote server
     """
-    def __init__(self, config):
-        self._config = config
+    def __init__(self):
+        pass
 
     def connect(self):
         """Connects to remote server
@@ -56,19 +56,9 @@ class Transfer(object):
         return 'Not implemented', -1, -1
 
 
-class SftpTransfer(Transfer):
-    """Transfers file to remote server via SFTP
-       defined by a `configparser.ConfigParser` passed into
-       the constructor with the following values set:
-
-       [`SECTION`]
-       `HOST` = <remote host>*
-       `USER` = <user name ie bob>
-       `PORT` = <port to use ie 22>
-       `KEY` = <private key if used>
-       `DEST_DIR` = <destination directory on remote host>*
-
-       NOTE: lines above with * are required
+class SftpTransferFromConfigFactory(object):
+    """Creates SftpTransfer objects from configparser.ConfigParser
+       object
     """
     SECTION = 'sftptransfer'
     HOST = 'host'
@@ -78,78 +68,155 @@ class SftpTransfer(Transfer):
     DEST_DIR = 'destination_dir'
     CON_TIMEOUT = 'connect_timeout'
 
-    DEFAULT_PORT = 22
-    DEFAULT_CON_TIMEOUT = 60
-
     def __init__(self, config):
+        """Constructor
+           defined by a `configparser.ConfigParser` passed into
+           the constructor with the following values set:
+
+           [sftptransfer]
+           host = <remote host>*
+           username = <user name ie bob>
+           port = <port to use ie 22>
+           private_key = <private key if used>
+           destination_dir = <destination directory on remote host>*
+
+           NOTE: lines above with * are required
+        :param config: configparser.ConfigParser object used
+                       to create SftpTransfer object
+        """
+        self._config = config
+
+    def get_sftptransfer(self):
+        """Gets `SftpTransfer` object using values from
+           `configparser.ConfigParser` passed into constructor
+        :returns: tuple (SftpTransfer, None) upon success or
+                  (None, 'error message as str') upon failure
+        """
+        con = self._config
+        if con is None:
+            return None, ('No configuration passed into ' +
+                          'SftpTransferFromConfigFactory')
+
+        if con.has_section(SftpTransferFromConfigFactory.SECTION) is False:
+            return None, ('No [' + SftpTransferFromConfigFactory.SECTION +
+                          '] section found in configuration.')
+
+        if con.has_option(SftpTransferFromConfigFactory.SECTION,
+                          SftpTransferFromConfigFactory.HOST) is False:
+            return None, ('No ' + SftpTransferFromConfigFactory.HOST +
+                          ' option found in configuration.')
+
+        host = con.get(SftpTransferFromConfigFactory.SECTION,
+                       SftpTransferFromConfigFactory.HOST)
+
+        if con.has_option(SftpTransferFromConfigFactory.SECTION,
+                          SftpTransferFromConfigFactory.DEST_DIR) is False:
+            return None, ('No ' + SftpTransferFromConfigFactory.DEST_DIR +
+                          ' option found in configuration.')
+
+        destdir = con.get(SftpTransferFromConfigFactory.SECTION,
+                          SftpTransferFromConfigFactory.DEST_DIR)
+
+        if con.has_option(SftpTransferFromConfigFactory.SECTION,
+                          SftpTransferFromConfigFactory.USER) is True:
+            user = con.get(SftpTransferFromConfigFactory.SECTION,
+                           SftpTransferFromConfigFactory.USER)
+        else:
+            user = None
+
+        if con.has_option(SftpTransferFromConfigFactory.SECTION,
+                          SftpTransferFromConfigFactory.PORT) is True:
+            port = int(con.get(SftpTransferFromConfigFactory.SECTION,
+                               SftpTransferFromConfigFactory.PORT))
+        else:
+            port = None
+
+        if con.has_option(SftpTransferFromConfigFactory.SECTION,
+                          SftpTransferFromConfigFactory.KEY) is True:
+            pkey = con.get(SftpTransferFromConfigFactory.SECTION,
+                           SftpTransferFromConfigFactory.KEY)
+        else:
+            pkey = None
+
+        if con.has_option(SftpTransferFromConfigFactory.SECTION,
+                          SftpTransferFromConfigFactory.CON_TIMEOUT) is True:
+            con_time = int(con.get(SftpTransferFromConfigFactory.SECTION,
+                                   SftpTransferFromConfigFactory.CON_TIMEOUT))
+        else:
+            con_time = None
+
+        return SftpTransfer(host, destdir, username=user,
+                            port=port, privatekeyfile=pkey,
+                            connect_timeout=con_time), None
+
+
+class SftpTransfer(Transfer):
+    """Transfers file to remote server via SFTP
+    """
+    DEFAULT_PORT = 22
+    DEFAULT_CONTIMEOUT = 60
+
+    def __init__(self, host, destdir, username=None,
+                 port=22, privatekeyfile=None, connect_timeout=60,
+                 missing_host_key_policy=None):
         """Constructor
         :param config: configparser.ConfigParser object set with
                        with values set as described in constructor
                        documentation
         """
-        super(SftpTransfer, self).__init__(config)
+        super(SftpTransfer, self).__init__()
+        self._host = host
+        self._destdir = destdir
+        self._username = username
+        if port is None:
+            self._port = SftpTransfer.DEFAULT_PORT
+        else:
+            self._port = port
+
+        if privatekeyfile is not None:
+            self._pkey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
+        else:
+            self._pkey = None
+
+        if connect_timeout is None:
+            self._connect_timeout = SftpTransfer.DEFAULT_CONTIMEOUT
+        else:
+            self._connect_timeout = connect_timeout
+
+        self._missing_host_key_policy = paramiko.AutoAddPolicy()
         self._altssh = None
         self._ssh = None
         self._sftp = None
 
-    def _get_value_from_config(self, section, option):
-        """Gets value from configuration
-        :param section: section containing option keyword
-        :param optionkey: option keyword
-        :returns value for keyword or None
+    def get_host(self):
+        """Gets host
         """
-        if self._config is None:
-            logger.error('Configuration for SftpTransfer is None')
-            return None
-        try:
-            return self._config.get(section, option)
-        except NoSectionError:
-            logger.info('No section named: ' + str(section))
-            return None
-        except NoOptionError:
-            logger.info('No option named: ' + str(option))
-            return None
+        return self._host
 
-    def _getprivatekey(self):
-        """Gets private key from config
+    def get_destination_directory(self):
+        """Gets destination directory
         """
-        pkey_file = self._get_value_from_config(SftpTransfer.SECTION,
-                                                SftpTransfer.KEY)
-        if pkey_file is not None:
-            logger.debug('Key file => ' + str(pkey_file))
-            return paramiko.RSAKey.from_private_key_file(pkey_file)
-        return None
+        return self._destdir
 
-    def _gethost(self):
-        return self._get_value_from_config(SftpTransfer.SECTION,
-                                           SftpTransfer.HOST)
+    def get_private_key(self):
+        """Gets private key object
+        """
+        return self._pkey
 
-    def _getusername(self):
-        return self._get_value_from_config(SftpTransfer.SECTION,
-                                           SftpTransfer.USER)
+    def get_connect_timeout(self):
+        """Gets connect timeout
+        """
+        return self._connect_timeout
 
-    def _get_missing_host_key_policy(self):
-        return paramiko.AutoAddPolicy()
+    def get_port(self):
+        """Gets port
+        """
+        return self._port
 
-    def _getport(self):
-        val = self._get_value_from_config(SftpTransfer.SECTION,
-                                           SftpTransfer.PORT)
-        if val is None:
-            return SftpTransfer.DEFAULT_PORT
-
-        logger.debug('Using user set port of: ' + str(val))
-        return int(val)
-
-    def _getconnecttimeout(self):
-        val = self._get_value_from_config(SftpTransfer.SECTION,
-                                          SftpTransfer.CON_TIMEOUT)
-        if val is None:
-            return SftpTransfer.DEFAULT_CON_TIMEOUT
-        return int(val)
-
-    def _getdestdir(self):
-        return self._get_value_from_config(SftpTransfer.SECTION,
-                                           SftpTransfer.DEST_DIR)
+    def get_username(self):
+        """Gets username
+        """
+        return self._username
 
     def set_alternate_connection(self, altssh):
         """Sets alternate ssh connection
@@ -164,21 +231,25 @@ class SftpTransfer(Transfer):
             logger.info('Alternate ssh connection set, using instead')
             self._ssh = self._altssh
             return
-        logger.info('Connecting via ssh to ' + str(self._gethost()))
+        start_time = int(time.time())
+        logger.info('Connecting via ssh to ' + str(self._host))
         self._ssh = paramiko.SSHClient()
-        self._ssh.set_missing_host_key_policy(self._get_missing_host_key_policy())
-        self._ssh.connect(hostname=self._gethost(),
-                          username=self._getusername(),
-                          pkey=self._getprivatekey(),
-                          port=self._getport(),
-                          timeout=self._getconnecttimeout())
-        logger.debug('Connection completed')
+        if self._missing_host_key_policy is not None:
+            self._ssh.set_missing_host_key_policy(self._missing_host_key_policy)
+
+        self._ssh.connect(hostname=self._host,
+                          username=self._username,
+                          pkey=self._pkey,
+                          port=self._port,
+                          timeout=self._connect_timeout)
+        logger.info('Connection completed, took ' +
+                    str(int(time.time()) - start_time) + ' seconds.')
 
     def disconnect(self):
         """Disconnects
         """
         logger.debug('Disconnecting from ssh server ' +
-                     str(self._gethost()))
+                     str(self._host))
         if self._sftp is not None:
             try:
                 self._sftp.close()
@@ -203,12 +274,11 @@ class SftpTransfer(Transfer):
                                          'first')
             self._sftp = self._ssh.open_sftp()
 
-        dest_dir = self._getdestdir()
-        if dest_dir is None:
+        if self._destdir is None:
             raise InvalidDestinationDirError('Destination directory '
                                              'cannot be None')
 
-        dest_file = os.path.join(dest_dir, os.path.basename(filepath))
+        dest_file = os.path.join(self._destdir, os.path.basename(filepath))
         logger.info('Uploading ' + str(filepath) + ' to ' + dest_file)
 
         transfer_err_msg = None

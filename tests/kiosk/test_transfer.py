@@ -26,6 +26,7 @@ from ncmirtools.kiosk.transfer import SSHConnectionError
 
 from ncmirtools.kiosk.transfer import Transfer
 from ncmirtools.kiosk.transfer import SftpTransfer
+from ncmirtools.kiosk.transfer import SftpTransferFromConfigFactory
 
 
 class TestTransfer(unittest.TestCase):
@@ -66,7 +67,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         pass
 
     def test_transfer_base_class(self):
-        t = Transfer(None)
+        t = Transfer()
         t.connect()
         t.disconnect()
         msg, duration, bytes_transferred = t.transfer_file('foo')
@@ -74,158 +75,104 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         self.assertEqual(duration, -1)
         self.assertEqual(bytes_transferred, -1)
 
-    def test_sftptransfer_get_value_from_config(self):
-        # test with None for Config
-        t = SftpTransfer(None)
-        res = t._get_value_from_config(SftpTransfer.SECTION,
-                                       SftpTransfer.HOST)
-        self.assertEqual(res, None)
+    def test_sftptransferfromconfigfactory_get_sftptransfer(self):
+        # no config
+        fac = SftpTransferFromConfigFactory(None)
+        sftp, errmsg = fac.get_sftptransfer()
+        self.assertEqual(sftp, None)
+        self.assertEqual(errmsg, 'No configuration passed into '
+                                 'SftpTransferFromConfigFactory')
 
-        # test with no section
+        # no section
         con = configparser.ConfigParser()
-        t = SftpTransfer(con)
-        res = t._get_value_from_config(SftpTransfer.SECTION,
-                                       SftpTransfer.HOST)
-        self.assertEqual(res, None)
+        fac = SftpTransferFromConfigFactory(con)
+        sftp, errmsg = fac.get_sftptransfer()
+        self.assertEqual(sftp, None)
+        self.assertEqual(errmsg, ('No [' +
+                                  SftpTransferFromConfigFactory.SECTION +
+                                  '] section found in configuration.'))
 
-        # test with no option
-        con.add_section(SftpTransfer.SECTION)
-        t = SftpTransfer(con)
-        res = t._get_value_from_config(SftpTransfer.SECTION,
-                                       SftpTransfer.HOST)
-        self.assertEqual(res, None)
+        # no host
+        con.add_section(SftpTransferFromConfigFactory.SECTION)
+        fac = SftpTransferFromConfigFactory(con)
+        sftp, errmsg = fac.get_sftptransfer()
+        self.assertEqual(sftp, None)
+        self.assertEqual(errmsg, ('No ' +
+                                  SftpTransferFromConfigFactory.HOST +
+                                  ' option found in configuration.'))
 
-        # test valid
-        # test with no section
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.HOST, 'someval')
-        t = SftpTransfer(con)
-        res = t._get_value_from_config(SftpTransfer.SECTION,
-                                       SftpTransfer.HOST)
-        self.assertEqual(res, 'someval')
+        # no dest dir
+        con.set(SftpTransferFromConfigFactory.SECTION,
+                SftpTransferFromConfigFactory.HOST, 'somehost')
+        fac = SftpTransferFromConfigFactory(con)
+        sftp, errmsg = fac.get_sftptransfer()
+        self.assertEqual(sftp, None)
+        self.assertEqual(errmsg, ('No ' +
+                                  SftpTransferFromConfigFactory.DEST_DIR +
+                                  ' option found in configuration.'))
 
-    def test_sftptransfer_get_private_key(self):
-        # test with no option set
-        t = SftpTransfer(None)
-        res = t._getprivatekey()
-        self.assertEqual(res, None)
+        # valid with no user, pkey, port
+        con.set(SftpTransferFromConfigFactory.SECTION,
+                SftpTransferFromConfigFactory.DEST_DIR, '/foo')
+        fac = SftpTransferFromConfigFactory(con)
+        sftp, errmsg = fac.get_sftptransfer()
+        self.assertEqual(sftp.__class__.__name__, 'SftpTransfer')
+        self.assertEqual(sftp.get_host(), 'somehost')
+        self.assertEqual(sftp.get_port(), SftpTransfer.DEFAULT_PORT)
+        self.assertEqual(sftp.get_connect_timeout(),
+                         SftpTransfer.DEFAULT_CONTIMEOUT)
+        self.assertEqual(sftp.get_destination_directory(), '/foo')
+        self.assertEqual(sftp.get_private_key(), None)
+        self.assertEqual(sftp.get_username(), None)
+        self.assertEqual(errmsg, None)
 
-        # test with valid key
+        # valid with user, pkey, port, and timeout
         temp_dir = tempfile.mkdtemp()
         try:
-            # test with invalid key
-            dkey = os.path.join(temp_dir, 'dummy.key')
-            con = configparser.ConfigParser()
-            con.add_section(SftpTransfer.SECTION)
-            con.set(SftpTransfer.SECTION,
-                    SftpTransfer.KEY, dkey)
-            t = SftpTransfer(con)
-
-            # test with invalid key
-            try:
-                t._getprivatekey()
-                self.fail('Expected IOError')
-            except IOError:
-                pass
-
-            # test with valid key
-            f = open(dkey, 'w')
+            con.set(SftpTransferFromConfigFactory.SECTION,
+                    SftpTransferFromConfigFactory.PORT, '50')
+            con.set(SftpTransferFromConfigFactory.SECTION,
+                    SftpTransferFromConfigFactory.USER, 'bob')
+            con.set(SftpTransferFromConfigFactory.SECTION,
+                    SftpTransferFromConfigFactory.CON_TIMEOUT, '25')
+            keyfile = os.path.join(temp_dir, 'somekey')
+            f = open(keyfile, 'w')
             f.write(self._get_dummy_private_key())
             f.flush()
             f.close()
-            res = t._getprivatekey()
-            self.assertEqual(res.get_name(), 'ssh-rsa')
-
+            con.set(SftpTransferFromConfigFactory.SECTION,
+                    SftpTransferFromConfigFactory.KEY,
+                    keyfile)
+            fac = SftpTransferFromConfigFactory(con)
+            sftp, errmsg = fac.get_sftptransfer()
+            self.assertEqual(sftp.get_host(), 'somehost')
+            self.assertEqual(sftp.get_port(), 50)
+            self.assertEqual(sftp.get_connect_timeout(), 25)
+            self.assertEqual(sftp.get_destination_directory(), '/foo')
+            self.assertEqual(sftp.get_private_key().get_name(), 'ssh-rsa')
+            self.assertEqual(sftp.get_username(), 'bob')
+            self.assertEqual(errmsg, None)
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_sftptransfer_get_host(self):
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.HOST, 'host')
-        t = SftpTransfer(con)
-        self.assertEqual(t._gethost(), 'host')
-
-    def test_sftptransfer_getusername(self):
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.USER, 'user')
-        t = SftpTransfer(con)
-        self.assertEqual(t._getusername(), 'user')
-
-    def test_sftptransfer_get_missing_host_key_policy(self):
-        t = SftpTransfer(None)
-        res = t._get_missing_host_key_policy()
-        self.assertTrue('AutoAddPolicy' in str(res))
-
-    def test_sftptransfer_getport(self):
-        t = SftpTransfer(None)
-        self.assertEqual(t._getport(), 22)
-
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.PORT, '23')
-        t = SftpTransfer(con)
-        self.assertEqual(t._getport(), 23)
-
-    def test_sftptransfer_get_destdir(self):
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.DEST_DIR, 'dir')
-        t = SftpTransfer(con)
-        self.assertEqual(t._getdestdir(), 'dir')
-
-    def test_sftptransfer_getconnecttimeout(self):
-        t = SftpTransfer(None)
-        self.assertEqual(t._getconnecttimeout(), 60)
-
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.CON_TIMEOUT, '45')
-        t = SftpTransfer(con)
-        self.assertEqual(t._getconnecttimeout(), 45)
-
-    def test_getdestdir(self):
-        t = SftpTransfer(None)
-        res = t._getdestdir()
-        self.assertEqual(res, None)
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.DEST_DIR, '/foo')
-        t = SftpTransfer(con)
-        res = t._getdestdir()
-        self.assertEqual(res, '/foo')
 
     def test_connect_invalid_connection(self):
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.HOST,
-                '127.0.0.1')
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.PORT,
-                '80')
-        t = SftpTransfer(con)
+        sftp = SftpTransfer('127.0.0.1', '/foo', port=80)
         try:
-            t.connect()
+            sftp.connect()
             self.fail('Expected some error')
         except:
             pass
 
     def test_connect_alt_ssh_set(self):
-        t = SftpTransfer(None)
-        t.set_alternate_connection('foo')
-        t.connect()
-        self.assertEqual(t._ssh, 'foo')
+        sftp = SftpTransfer('127', '/foo')
+        sftp.set_alternate_connection('foo')
+        sftp.connect()
+        self.assertEqual(sftp._ssh, 'foo')
 
     def test_disconnect_without_connect_call(self):
-        t = SftpTransfer(None)
+
+        t = SftpTransfer('127', '/foo')
         t._sftp = Parameters()
         t._ssh = Parameters()
         t.disconnect()
@@ -233,7 +180,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         self.assertEqual(t._ssh, None)
 
     def test_disconnect_where_both_cause_exceptions(self):
-        t = SftpTransfer(None)
+        t = SftpTransfer('127', '/foo')
         t._sftp = 'foo'
         t._ssh = 'hi'
         t.disconnect()
@@ -241,7 +188,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         self.assertEqual(t._ssh, None)
 
     def test_transfer_file_before_connect(self):
-        t = SftpTransfer(None)
+        t = SftpTransfer('127', '/foo')
         try:
             t.transfer_file('/foo/hi.txt')
             self.fail('Expected SSHConnectionError')
@@ -249,7 +196,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
             pass
 
     def test_transfer_dest_dir_is_none(self):
-        t = SftpTransfer(None)
+        t = SftpTransfer('127', None)
         t._sftp = 'hi'
         try:
             t.transfer_file('/somefile')
@@ -258,12 +205,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
             pass
 
     def test_transfer_raises_exception(self):
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.DEST_DIR,
-                '/remotedir')
-        t = SftpTransfer(con)
+        t = SftpTransfer('127', '/remotedir')
         t._sftp = Parameters()
         t._sftp.put = Mock(side_effect=IOError('some error'))
 
@@ -271,12 +213,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         self.assertEqual(msg, 'Caught an exception: IOError : some error')
 
     def test_transfer_success_with_sftp_set(self):
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.DEST_DIR,
-                '/remotedir')
-        t = SftpTransfer(con)
+        t = SftpTransfer('127', '/remotedir')
         t._sftp = Parameters()
         mockstat = Parameters()
         mockstat.st_size = 500
@@ -288,12 +225,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         self.assertEqual(b_trans, 500)
 
     def test_transfer_success_with_sftp_created_from_ssh(self):
-        con = configparser.ConfigParser()
-        con.add_section(SftpTransfer.SECTION)
-        con.set(SftpTransfer.SECTION,
-                SftpTransfer.DEST_DIR,
-                '/remotedir')
-        t = SftpTransfer(con)
+        t = SftpTransfer('127', '/remotedir')
         mockssh = Parameters()
         mocksftp = Parameters()
         mockstat = Parameters()
@@ -307,5 +239,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         self.assertTrue(dur >= 0)
         self.assertEqual(b_trans, 1500)
         t.disconnect()
+
+
 if __name__ == '__main__':
     sys.exit(unittest.main())
