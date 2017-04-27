@@ -36,7 +36,8 @@ def setup_logging(thelogger,
     logging.getLogger('ncmirtools.mpidir').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.lookup').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.imagetokiosk').setLevel(numericloglevel)
-    logging.getLogger('ncmirtools.transfer').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.kiosk.transfer').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.kiosk.datafinder').setLevel(numericloglevel)
 
 class ConfigMissingError(Exception):
     """Raised if configuration file is missing
