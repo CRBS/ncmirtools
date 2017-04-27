@@ -242,6 +242,14 @@ class TestImagetokiosk(unittest.TestCase):
         self.assertEqual(filefinder, None)
         self.assertTrue('found in configuration' in errmsg)
 
+        # test valid config
+        con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+        con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                NcmirToolsConfig.DATASERVER_DATADIR, '/foo')
+        filefinder, errmsg = imagetokiosk._get_file_finder(p, con)
+        self.assertEqual(filefinder.get_searchdir(), '/foo')
+        self.assertEqual(errmsg, None)
+
     def test_upload_image_file_get_sftptransfer(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -288,7 +296,7 @@ class TestImagetokiosk(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_upload_image_file_success_dryru(self):
+    def test_upload_image_file_success_dryrun(self):
         temp_dir = tempfile.mkdtemp()
         try:
             p = imagetokiosk.Parameters()
@@ -301,6 +309,34 @@ class TestImagetokiosk(unittest.TestCase):
 
             fakefile = os.path.join(temp_dir, 'foo.txt')
             open(fakefile, 'a').close()
+            mt = SftpTransfer('foo.com', '/foo')
+            mockssh = imagetokiosk.Parameters()
+            mocksftp = imagetokiosk.Parameters()
+            mockst = imagetokiosk.Parameters()
+            mockst.st_size = 500
+            mocksftp.put = Mock(return_value=mockst)
+            mockssh.open_sftp = Mock(return_value=mocksftp)
+            mt.set_alternate_connection(mockssh)
+            res = imagetokiosk._upload_image_file(p, fakefile, con,
+                                                  alt_transfer=mt)
+            self.assertEqual(res, 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_upload_image_file_success_dryrun_alreadyuploaded(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            p = imagetokiosk.Parameters()
+            p.mode = imagetokiosk.DRYRUN_MODE
+            logfile = os.path.join(temp_dir, 'logfile.txt')
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_TRANSFERLOG, logfile)
+
+            fakefile = os.path.join(temp_dir, 'foo.txt')
+            open(fakefile, 'a').close()
+            imagetokiosk._update_last_transferred_file(fakefile, con)
             mt = SftpTransfer('foo.com', '/foo')
             mockssh = imagetokiosk.Parameters()
             mocksftp = imagetokiosk.Parameters()
@@ -341,6 +377,131 @@ class TestImagetokiosk(unittest.TestCase):
             self.assertEqual(res, 1)
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_check_and_transfer_image_invalid_config(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            con.set(configparser.DEFAULTSECT, 'hi')
+            uconfig = os.path.join(temp_dir,
+                                   NcmirToolsConfig.UCONFIG_FILE)
+            f = open(uconfig, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+            p = imagetokiosk.Parameters()
+            p.program = 'foo'
+            p.homedir = temp_dir
+            p.mode = imagetokiosk.RUN_MODE
+            res = imagetokiosk._check_and_transfer_image(p)
+            self.assertEqual(res, 2)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_check_and_transfer_image_unable_to_load_filefinder(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            lockfile = os.path.join(temp_dir, 'lockfile')
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_LOCKFILE,
+                    lockfile)
+            uconfig = os.path.join(temp_dir,
+                                   NcmirToolsConfig.UCONFIG_FILE)
+            f = open(uconfig, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+            p = imagetokiosk.Parameters()
+            p.program = 'foo'
+            p.homedir = temp_dir
+            p.mode = imagetokiosk.RUN_MODE
+            res = imagetokiosk._check_and_transfer_image(p)
+            self.assertEqual(res, 3)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_check_and_transfer_image_invalid_lockfile(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_LOCKFILE,
+                    temp_dir)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_DATADIR, temp_dir)
+            uconfig = os.path.join(temp_dir,
+                                   NcmirToolsConfig.UCONFIG_FILE)
+            f = open(uconfig, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+            p = imagetokiosk.Parameters()
+            p.program = 'foo'
+            p.homedir = temp_dir
+            p.mode = imagetokiosk.RUN_MODE
+            res = imagetokiosk._check_and_transfer_image(p)
+            self.assertEqual(res, 5)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_check_and_transfer_image_no_file_to_transfer(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            lockfile = os.path.join(temp_dir, 'lockfile')
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_LOCKFILE,
+                    lockfile)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_DATADIR, temp_dir)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_IMGSUFFIX, '.dm4')
+            uconfig = os.path.join(temp_dir,
+                                   NcmirToolsConfig.UCONFIG_FILE)
+            f = open(uconfig, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+            p = imagetokiosk.Parameters()
+            p.program = 'foo'
+            p.homedir = temp_dir
+            p.mode = imagetokiosk.DRYRUN_MODE
+            res = imagetokiosk._check_and_transfer_image(p)
+            self.assertEqual(res, 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_main_no_file_to_transfer(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            con = configparser.ConfigParser()
+            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
+            lockfile = os.path.join(temp_dir, 'lockfile')
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_LOCKFILE,
+                    lockfile)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_DATADIR, temp_dir)
+            con.set(NcmirToolsConfig.DATASERVER_SECTION,
+                    NcmirToolsConfig.DATASERVER_IMGSUFFIX, '.dm4')
+            uconfig = os.path.join(temp_dir,
+                                   NcmirToolsConfig.UCONFIG_FILE)
+            f = open(uconfig, 'w')
+            con.write(f)
+            f.flush()
+            f.close()
+            res = imagetokiosk.main(['foo', imagetokiosk.DRYRUN_MODE,
+                                   imagetokiosk.HOMEDIR_ARG, temp_dir])
+
+            self.assertEqual(res, 0)
+        finally:
+            shutil.rmtree(temp_dir)
+
 
 if __name__ == '__main__':
     sys.exit(unittest.main())

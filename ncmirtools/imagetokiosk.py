@@ -242,7 +242,13 @@ def _check_and_transfer_image(theargs):
 
     lockfile = con.get(NcmirToolsConfig.DATASERVER_SECTION,
                        NcmirToolsConfig.DATASERVER_LOCKFILE)
-    lock = _get_lock(lockfile)
+    try:
+        lock = _get_lock(lockfile)
+    except OSError as e:
+        logger.exception('caught exception')
+        sys.stderr.write('\nError creating lockfile: ' + str(e) + '\n')
+        return 5
+
     try:
         thefile = filefinder.get_next_file()
         if thefile is None:
