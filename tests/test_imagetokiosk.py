@@ -383,7 +383,7 @@ class TestImagetokiosk(unittest.TestCase):
         try:
             con = configparser.ConfigParser()
             con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
-            con.set(configparser.DEFAULTSECT, 'hi')
+            con.set(configparser.DEFAULTSECT, 'hi','someval')
             uconfig = os.path.join(temp_dir,
                                    NcmirToolsConfig.UCONFIG_FILE)
             f = open(uconfig, 'w')
