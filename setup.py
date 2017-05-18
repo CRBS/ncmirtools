@@ -14,7 +14,8 @@ requirements = [
     "configparser",
     "pg8000",
     "lockfile",
-    "ftpretty"
+    "ftpretty",
+    "paramiko"
 ]
 
 test_requirements = [
@@ -22,6 +23,7 @@ test_requirements = [
     "pg8000",
     "configparser",
     "ftpretty",
+    "paramiko",
     "mock"
 ]
 
