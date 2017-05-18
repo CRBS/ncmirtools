@@ -17,10 +17,6 @@ import configparser
 from mock import Mock
 
 from ncmirtools.imagetokiosk import Parameters
-from configparser import NoOptionError
-from configparser import NoSectionError
-
-from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.kiosk.transfer import InvalidDestinationDirError
 from ncmirtools.kiosk.transfer import SSHConnectionError
 
@@ -154,7 +150,6 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
             self.assertEqual(errmsg, None)
         finally:
             shutil.rmtree(temp_dir)
-
 
     def test_connect_invalid_connection(self):
         sftp = SftpTransfer('127.0.0.1', '/foo', port=80)

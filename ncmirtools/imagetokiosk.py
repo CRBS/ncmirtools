@@ -3,7 +3,6 @@
 import os
 import sys
 import argparse
-import time
 import ncmirtools
 import logging
 import psutil
@@ -11,7 +10,6 @@ import psutil
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.config import ConfigMissingError
 from ncmirtools import config
-from ncmirtools.kiosk.transfer import SftpTransfer
 from ncmirtools.kiosk.transfer import SftpTransferFromConfigFactory
 from ncmirtools.kiosk.datafinder import SecondYoungestFromConfigFactory
 
@@ -24,6 +22,7 @@ logger = logging.getLogger('ncmirtools.imagetokioskdaemon')
 HOMEDIR_ARG = '--homedir'
 RUN_MODE = 'run'
 DRYRUN_MODE = 'dryrun'
+
 
 class Parameters(object):
     """Placeholder class for parameters
@@ -205,6 +204,7 @@ def _upload_image_file(theargs, thefile, con, alt_transfer=None):
         sys.stdout.write('According to last transfer log, ' +
                          str(thefile) + ' already transferred\n')
     return 0
+
 
 def _get_file_finder(theargs, con):
     """Gets file finder based on arguments and configuration

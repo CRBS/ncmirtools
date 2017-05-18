@@ -7,7 +7,6 @@ test_imagetokiosk
 
 Tests for `imagetokiosk` module.
 """
-import re
 import os
 import sys
 import tempfile
@@ -129,7 +128,7 @@ class TestImagetokiosk(unittest.TestCase):
             # no section test
             con = configparser.ConfigParser()
             try:
-                res = imagetokiosk._update_last_transferred_file('hi', con)
+                imagetokiosk._update_last_transferred_file('hi', con)
                 self.fail('Expected NoSectionError')
             except NoSectionError:
                 pass
@@ -137,7 +136,7 @@ class TestImagetokiosk(unittest.TestCase):
             # no option test
             con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
             try:
-                res = imagetokiosk._update_last_transferred_file('hi', con)
+                imagetokiosk._update_last_transferred_file('hi', con)
                 self.fail('Expected NoOptionError')
             except NoOptionError:
                 pass
@@ -383,7 +382,7 @@ class TestImagetokiosk(unittest.TestCase):
         try:
             con = configparser.ConfigParser()
             con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
-            con.set(configparser.DEFAULTSECT, 'hi','someval')
+            con.set(configparser.DEFAULTSECT, 'hi', 'someval')
             uconfig = os.path.join(temp_dir,
                                    NcmirToolsConfig.UCONFIG_FILE)
             f = open(uconfig, 'w')
@@ -496,7 +495,7 @@ class TestImagetokiosk(unittest.TestCase):
             f.flush()
             f.close()
             res = imagetokiosk.main(['foo', imagetokiosk.DRYRUN_MODE,
-                                   imagetokiosk.HOMEDIR_ARG, temp_dir])
+                                     imagetokiosk.HOMEDIR_ARG, temp_dir])
 
             self.assertEqual(res, 0)
         finally:

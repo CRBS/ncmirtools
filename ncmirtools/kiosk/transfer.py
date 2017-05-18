@@ -6,8 +6,6 @@ import os
 import time
 import logging
 import paramiko
-from configparser import NoOptionError
-from configparser import NoSectionError
 
 
 logger = logging.getLogger(__name__)
@@ -17,6 +15,7 @@ class InvalidDestinationDirError(Exception):
     """Error raised when destination directory is invalid
     """
     pass
+
 
 class SSHConnectionError(Exception):
     """Error raised when ssh connection is invalid
@@ -34,7 +33,6 @@ class Transfer(object):
         """Connects to remote server
         """
         logger.debug('placeholder connect() invoked')
-
 
     def disconnect(self):
         """Disconnects from remote server
@@ -235,7 +233,8 @@ class SftpTransfer(Transfer):
         logger.info('Connecting via ssh to ' + str(self._host))
         self._ssh = paramiko.SSHClient()
         if self._missing_host_key_policy is not None:
-            self._ssh.set_missing_host_key_policy(self._missing_host_key_policy)
+            self._ssh.set_missing_host_key_policy(self.
+                                                  _missing_host_key_policy)
 
         self._ssh.connect(hostname=self._host,
                           username=self._username,

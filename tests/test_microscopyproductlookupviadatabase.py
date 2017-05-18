@@ -11,7 +11,6 @@ Tests for `MicroscopyProuctLookupViaDatabase` class.
 import sys
 import unittest
 from mock import Mock
-import math
 import configparser
 
 from ncmirtools.lookup import MicroscopyProductLookupViaDatabase

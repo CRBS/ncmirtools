@@ -4,8 +4,6 @@ __author__ = 'churas'
 import os
 import configparser
 import logging
-from configparser import NoOptionError
-from configparser import NoSectionError
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +36,7 @@ def setup_logging(thelogger,
     logging.getLogger('ncmirtools.imagetokiosk').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.kiosk.transfer').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.kiosk.datafinder').setLevel(numericloglevel)
+
 
 class ConfigMissingError(Exception):
     """Raised if configuration file is missing

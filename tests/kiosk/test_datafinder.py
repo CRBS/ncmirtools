@@ -14,13 +14,13 @@ import sys
 import unittest
 import os
 import configparser
-from mock import Mock
 
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.kiosk import datafinder
 from ncmirtools.kiosk.datafinder import FileFinder
 from ncmirtools.kiosk.datafinder import SecondYoungestFromConfigFactory
 from ncmirtools.kiosk.datafinder import SecondYoungest
+
 
 class TestDataFinder(unittest.TestCase):
 
@@ -43,7 +43,7 @@ class TestDataFinder(unittest.TestCase):
 
             count = 0
             for item in datafinder._get_files_in_directory_generator(temp_dir,
-                                                                       None):
+                                                                     None):
                 count += 1
             self.assertEqual(count, 0)
         finally:
@@ -57,7 +57,7 @@ class TestDataFinder(unittest.TestCase):
             open(onefile, 'a').close()
 
             for item in datafinder._get_files_in_directory_generator(onefile,
-                                                                       None):
+                                                                     None):
                 self.assertEqual(item, onefile)
                 count += 1
 
@@ -73,7 +73,7 @@ class TestDataFinder(unittest.TestCase):
             open(onefile, 'a').close()
 
             for item in datafinder._get_files_in_directory_generator(temp_dir,
-                                                                       None):
+                                                                     None):
                 self.assertEqual(item, onefile)
                 count += 1
 
@@ -92,7 +92,7 @@ class TestDataFinder(unittest.TestCase):
             open(three, 'a').close()
             thefiles = []
             for item in datafinder._get_files_in_directory_generator(temp_dir,
-                                                                       []):
+                                                                     []):
                 thefiles.append(item)
             self.assertTrue(one in thefiles)
             self.assertTrue(two in thefiles)
@@ -116,7 +116,7 @@ class TestDataFinder(unittest.TestCase):
             open(four, 'a').close()
             thefiles = []
             for item in datafinder._get_files_in_directory_generator(temp_dir,
-                                                                       None):
+                                                                     None):
                 thefiles.append(item)
             self.assertTrue(one in thefiles)
             self.assertTrue(two in thefiles)
@@ -141,8 +141,8 @@ class TestDataFinder(unittest.TestCase):
             open(four, 'a').close()
             thefiles = []
             for item in datafinder._get_files_in_directory_generator(temp_dir,
-                                                                       ['foodir',
-                                                                        'blah']):
+                                                                     ['foodir',
+                                                                      'blah']):
                 thefiles.append(item)
             self.assertTrue(one in thefiles)
             self.assertTrue(two in thefiles)

@@ -37,11 +37,12 @@ def _get_files_in_directory_generator(path,
             yield fullpath
         if os.path.isdir(fullpath):
             if list_of_dirs_to_exclude is None or \
-                            os.path.basename(fullpath) not in \
-                            list_of_dirs_to_exclude:
-                for aentry in _get_files_in_directory_generator(fullpath,
-                                                                list_of_dirs_to_exclude):
+               os.path.basename(fullpath) not in list_of_dirs_to_exclude:
+                for aentry in \
+                    _get_files_in_directory_generator(fullpath,
+                                                      list_of_dirs_to_exclude):
                     yield aentry
+
 
 class FileFinder(object):
     """Base class for classes that find
@@ -61,7 +62,8 @@ class SecondYoungest(FileFinder):
     """Finds second youngest file under a given
     directory tree
     """
-    def __init__(self,searchdir, suffix, list_of_dirs_to_exclude):
+
+    def __init__(self, searchdir, suffix, list_of_dirs_to_exclude):
         """Constructor
         :param searchdir: directory to examine
         :param suffix: Only consider files with this suffix
@@ -114,7 +116,8 @@ class SecondYoungest(FileFinder):
         for img_file in _get_files_in_directory_generator(self._searchdir,
                                                           ex_list):
 
-            if self._suffix is not None and not img_file.endswith(self._suffix):
+            if self._suffix is not None and not img_file.endswith(self.
+                                                                  _suffix):
                 files_wrong_suffix_count += 1
                 continue
 
@@ -131,6 +134,7 @@ class SecondYoungest(FileFinder):
                     str(files_wrong_suffix_count) +
                     ' files with invalid suffix')
         return secondyoungest_file
+
 
 class SecondYoungestFromConfigFactory(object):
     """Factory that creates SecondYoungestFileFinder
