@@ -23,6 +23,7 @@ test_requirements = [
     "pg8000",
     "configparser",
     "ftpretty",
+    "lockfile",
     "paramiko",
     "mock"
 ]
