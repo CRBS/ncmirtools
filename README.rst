@@ -37,6 +37,8 @@ Tools
 
 * **mpidinfo.py** -- Queries database and returns information on specific Microscopy Product
 
+* **imagetokiosk.py** -- Transfers second youngest image file to remote server via scp
+
 Dependencies
 ------------
 
@@ -45,6 +47,10 @@ Dependencies
 * `configparser <https://pypi.python.org/pypi/configparser>`_
 
 * `pg8000 <https://pypi.python.org/pypi/pg8000>`_
+
+* `ftpretty <https://pypi.python.org/pypi/ftpretty>`_
+
+* `paramiko <https://pypi.python.org/pypi/paramiko>`_
 
 Compatibility
 -------------
