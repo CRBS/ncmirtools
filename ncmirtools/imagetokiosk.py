@@ -5,7 +5,6 @@ import sys
 import argparse
 import ncmirtools
 import logging
-import psutil
 
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.config import ConfigMissingError
@@ -13,7 +12,6 @@ from ncmirtools import config
 from ncmirtools.kiosk.transfer import SftpTransferFromConfigFactory
 from ncmirtools.kiosk.datafinder import SecondYoungestFromConfigFactory
 
-from lockfile.pidlockfile import PIDLockFile
 
 
 # create logger
