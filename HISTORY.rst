@@ -2,6 +2,17 @@
 History
 =======
 
+0.4.0 (2017-06-28)
+------------------
+
+* Added imagetokiosk.py which transfers second youngest image
+  file to remote server via scp.
+  `Issue #16 <https://github.com/CRBS/ncmirtools/issues/15>`_
+
+* Fixed a couple minor issues so this tool will work on 
+  Windows. 
+  `Issue #14 <https://github.com/CRBS/ncmirtools/issues/14>`_
+
 0.3.0 (2017-01-13)
 ------------------
 
