@@ -15,7 +15,7 @@ from ncmirtools.kiosk.datafinder import SecondYoungestFromConfigFactory
 
 
 # create logger
-logger = logging.getLogger('ncmirtools.imagetokioskdaemon')
+logger = logging.getLogger('ncmirtools.imagetokiosk')
 
 HOMEDIR_ARG = '--homedir'
 RUN_MODE = 'run'
