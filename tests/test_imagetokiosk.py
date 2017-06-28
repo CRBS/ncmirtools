@@ -45,39 +45,6 @@ class TestImagetokiosk(unittest.TestCase):
         self.assertEqual(pargs.loglevel, 'DEBUG')
         self.assertEqual(pargs.homedir, 'home')
 
-    def test_get_lock(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            # try passing a directory
-            try:
-                imagetokiosk._get_lock(temp_dir)
-            except OSError as e:
-                self.assertTrue('Is a directory:' in str(e) or
-                                'Operation not permitted' in str(e))
-
-            # try a valid lock
-            lfile = os.path.join(temp_dir, 'somelock')
-            res = imagetokiosk._get_lock(lfile)
-            self.assertEqual(os.getpid(), res.read_pid())
-
-            # try lock again where same pid
-            res = imagetokiosk._get_lock(lfile)
-            self.assertEqual(os.getpid(), res.read_pid())
-
-            # put another pid in lockfile that exists so
-            # we get an exception
-            f = open(lfile, 'w')
-            f.write(str(os.getppid()) + '\n')
-            f.flush()
-            f.close()
-            try:
-                imagetokiosk._get_lock(lfile)
-            except Exception as e:
-                self.assertTrue('imagetokiosk.py with pid ' in str(e))
-
-        finally:
-            shutil.rmtree(temp_dir)
-
     def test_get_last_transferred_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
@@ -206,29 +173,15 @@ class TestImagetokiosk(unittest.TestCase):
                                      'configuration. Please run foo -h for '
                                      'more information.')
 
-            # test with no lockfile option
+            # valid
             c.add_section(NcmirToolsConfig.DATASERVER_SECTION)
             f = open(cfile, 'w')
             c.write(f)
             f.flush()
             f.close()
             con, errmsg = imagetokiosk._get_and_verifyconfigparserconfig(p)
-            self.assertEqual(con, None)
-            self.assertEqual(errmsg, 'No lockfile option found in '
-                                     'configuration. Please run foo -h for '
-                                     'more information.')
-
-            # valid
-            c.set(NcmirToolsConfig.DATASERVER_SECTION,
-                  NcmirToolsConfig.DATASERVER_LOCKFILE,
-                  'foo')
-            f = open(cfile, 'w')
-            c.write(f)
-            f.flush()
-            f.close()
-            con, errmsg = imagetokiosk._get_and_verifyconfigparserconfig(p)
-            self.assertEqual(errmsg, None)
             self.assertTrue(con is not None)
+            self.assertEqual(errmsg, None)
         finally:
             shutil.rmtree(temp_dir)
 
@@ -381,7 +334,6 @@ class TestImagetokiosk(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             con = configparser.ConfigParser()
-            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
             con.set(configparser.DEFAULTSECT, 'hi', 'someval')
             uconfig = os.path.join(temp_dir,
                                    NcmirToolsConfig.UCONFIG_FILE)
@@ -403,10 +355,7 @@ class TestImagetokiosk(unittest.TestCase):
         try:
             con = configparser.ConfigParser()
             con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
-            lockfile = os.path.join(temp_dir, 'lockfile')
-            con.set(NcmirToolsConfig.DATASERVER_SECTION,
-                    NcmirToolsConfig.DATASERVER_LOCKFILE,
-                    lockfile)
+
             uconfig = os.path.join(temp_dir,
                                    NcmirToolsConfig.UCONFIG_FILE)
             f = open(uconfig, 'w')
@@ -422,40 +371,12 @@ class TestImagetokiosk(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_check_and_transfer_image_invalid_lockfile(self):
-        temp_dir = tempfile.mkdtemp()
-        try:
-            con = configparser.ConfigParser()
-            con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
-            con.set(NcmirToolsConfig.DATASERVER_SECTION,
-                    NcmirToolsConfig.DATASERVER_LOCKFILE,
-                    temp_dir)
-            con.set(NcmirToolsConfig.DATASERVER_SECTION,
-                    NcmirToolsConfig.DATASERVER_DATADIR, temp_dir)
-            uconfig = os.path.join(temp_dir,
-                                   NcmirToolsConfig.UCONFIG_FILE)
-            f = open(uconfig, 'w')
-            con.write(f)
-            f.flush()
-            f.close()
-            p = imagetokiosk.Parameters()
-            p.program = 'foo'
-            p.homedir = temp_dir
-            p.mode = imagetokiosk.RUN_MODE
-            res = imagetokiosk._check_and_transfer_image(p)
-            self.assertEqual(res, 5)
-        finally:
-            shutil.rmtree(temp_dir)
-
     def test_check_and_transfer_image_no_file_to_transfer(self):
         temp_dir = tempfile.mkdtemp()
         try:
             con = configparser.ConfigParser()
             con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
-            lockfile = os.path.join(temp_dir, 'lockfile')
-            con.set(NcmirToolsConfig.DATASERVER_SECTION,
-                    NcmirToolsConfig.DATASERVER_LOCKFILE,
-                    lockfile)
+
             con.set(NcmirToolsConfig.DATASERVER_SECTION,
                     NcmirToolsConfig.DATASERVER_DATADIR, temp_dir)
             con.set(NcmirToolsConfig.DATASERVER_SECTION,
@@ -480,10 +401,7 @@ class TestImagetokiosk(unittest.TestCase):
         try:
             con = configparser.ConfigParser()
             con.add_section(NcmirToolsConfig.DATASERVER_SECTION)
-            lockfile = os.path.join(temp_dir, 'lockfile')
-            con.set(NcmirToolsConfig.DATASERVER_SECTION,
-                    NcmirToolsConfig.DATASERVER_LOCKFILE,
-                    lockfile)
+
             con.set(NcmirToolsConfig.DATASERVER_SECTION,
                     NcmirToolsConfig.DATASERVER_DATADIR, temp_dir)
             con.set(NcmirToolsConfig.DATASERVER_SECTION,

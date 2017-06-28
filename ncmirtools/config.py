@@ -64,7 +64,6 @@ class NcmirToolsConfig(object):
     DATASERVER_KIOSKSERVER = 'kioskserver'
     DATASERVER_KIOSKDIR = 'kioskdir'
     DATASERVER_TRANSFERLOG = 'transferlogfile'
-    DATASERVER_LOCKFILE = 'lockfile'
 
     ETC_DIR = os.path.sep + 'etc'
 

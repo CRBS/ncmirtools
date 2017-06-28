@@ -13,7 +13,6 @@ requirements = [
     "argparse",
     "configparser",
     "pg8000",
-    "lockfile",
     "ftpretty",
     "paramiko",
     "psutil"
@@ -24,7 +23,6 @@ test_requirements = [
     "pg8000",
     "configparser",
     "ftpretty",
-    "lockfile",
     "paramiko",
     "psutil",
     "mock"

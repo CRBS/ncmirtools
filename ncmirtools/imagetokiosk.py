@@ -59,41 +59,6 @@ def _parse_arguments(desc, args):
     return parser.parse_args(args, namespace=parsed_arguments)
 
 
-def _get_lock(lockfile):
-    """Create lock file to prevent this process from running on same data.
-
-       This uses ``PIDLockFile`` to create a pid lock file
-       If pid exists it is assumed the lock is held otherwise lock
-       is broken and recreated
-       :param lockfile: lockfile path
-       :return: ``PIDLockFile`` upon success
-       :raises: LockException: If there was a problem locking
-       :raises: Exception: If valid pid lock file already exists
-       """
-
-    logger.debug("Looking for lock file: " + lockfile)
-    lock = PIDLockFile(lockfile, timeout=10)
-
-    if lock.i_am_locking():
-        logger.debug("My process id" + str(lock.read_pid()) +
-                     " had the lock so I am breaking")
-        lock.break_lock()
-        lock.acquire(timeout=10)
-        return lock
-
-    if lock.is_locked():
-        logger.debug("Lock file exists checking pid")
-        if psutil.pid_exists(lock.read_pid()):
-            raise Exception("imagetokiosk.py with pid " +
-                            str(lock.read_pid()) +
-                            " is running")
-
-    lock.break_lock()
-    logger.debug("Acquiring lock")
-    lock.acquire(timeout=10)
-    return lock
-
-
 def _get_last_transferred_file(con):
     """Gets last transferred file from transferlogfile
     :param con: ConfigParser object which should have
@@ -240,26 +205,12 @@ def _check_and_transfer_image(theargs):
         sys.stderr.write(errmsg + '\n')
         return 3
 
-    lockfile = con.get(NcmirToolsConfig.DATASERVER_SECTION,
-                       NcmirToolsConfig.DATASERVER_LOCKFILE)
-    try:
-        lock = _get_lock(lockfile)
-    except OSError as e:
-        logger.exception('caught exception')
-        sys.stderr.write('\nError creating lockfile: ' + str(e) + '\n')
-        return 5
+    thefile = filefinder.get_next_file()
+    if thefile is None:
+        sys.stdout.write('Did not find a file to transfer\n')
+        return 0
 
-    try:
-        thefile = filefinder.get_next_file()
-        if thefile is None:
-            sys.stdout.write('Did not find a file to transfer\n')
-            return 0
-
-        return _upload_image_file(theargs, thefile, con)
-    finally:
-        if lock is not None:
-            logger.debug('Releasing lock')
-            lock.release()
+    return _upload_image_file(theargs, thefile, con)
 
 
 def _get_run_help_string(theargs):
@@ -298,12 +249,6 @@ def _get_and_verifyconfigparserconfig(theargs):
     if con.has_section(NcmirToolsConfig.DATASERVER_SECTION) is False:
         return None, ('No [' + NcmirToolsConfig.DATASERVER_SECTION +
                       '] section found in configuration. ' +
-                      _get_run_help_string(theargs))
-
-    if con.has_option(NcmirToolsConfig.DATASERVER_SECTION,
-                      NcmirToolsConfig.DATASERVER_LOCKFILE) is False:
-        return None, ('No ' + NcmirToolsConfig.DATASERVER_LOCKFILE +
-                      ' option found in configuration. ' +
                       _get_run_help_string(theargs))
 
     return con, None
@@ -376,8 +321,6 @@ def main(arglist):
               {d_exclude}    = <comma delimited list of directory paths>
               {transferlog}  = <file which contains last file transferred,
                                  prevents duplicate transfer of files>
-              {lockfile}         = <path to lockfile,
-                                   prevents duplicate invocations>
 
               [{ds_ssh}]
 
@@ -395,7 +338,6 @@ def main(arglist):
               {imagesuffix}      = .dm4
               {d_exclude}    = $RECYCLE.BIN
               {transferlog}  = /cygdrive/home/foo/last_transferred_file.log
-              {lockfile}         = /cygdrive/home/foo/mylockfile.pid
 
               [{ds_ssh}]
 
@@ -411,7 +353,6 @@ def main(arglist):
                          d_exclude=NcmirToolsConfig.DATASERVER_DIRSTOEXCLUDE,
                          kioskdir=SftpTransferFromConfigFactory.DEST_DIR,
                          kioskserver=SftpTransferFromConfigFactory.HOST,
-                         lockfile=NcmirToolsConfig.DATASERVER_LOCKFILE,
                          homedir=HOMEDIR_ARG,
                          transferlog=NcmirToolsConfig.DATASERVER_TRANSFERLOG,
                          ds_ssh=SftpTransferFromConfigFactory.SECTION,
