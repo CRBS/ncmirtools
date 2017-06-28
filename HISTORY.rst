@@ -7,7 +7,7 @@ History
 
 * Added imagetokiosk.py which transfers second youngest image
   file to remote server via scp.
-  `Issue #16 <https://github.com/CRBS/ncmirtools/issues/15>`_
+  `Issue #16 <https://github.com/CRBS/ncmirtools/issues/16>`_
 
 * Fixed a couple minor issues so this tool will work on 
   Windows. 
