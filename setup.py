@@ -56,7 +56,8 @@ setup(
                 'ncmirtools/projectsearch.py',
                 'ncmirtools/projectdir.py',
                 'ncmirtools/mpidinfo.py',
-                'ncmirtools/imagetokiosk.py'
+                'ncmirtools/imagetokiosk.py',
+                'ncmirtools/ncmirtool.py'
               ],
     test_suite='tests',
     tests_require=test_requirements
