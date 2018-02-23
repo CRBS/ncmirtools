@@ -14,7 +14,8 @@ requirements = [
     "configparser",
     "pg8000",
     "ftpretty",
-    "paramiko"
+    "paramiko",
+    "requests"
 ]
 
 test_requirements = [
@@ -23,6 +24,7 @@ test_requirements = [
     "configparser",
     "ftpretty",
     "paramiko",
+    "requests",
     "mock"
 ]
 
