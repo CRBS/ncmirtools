@@ -260,7 +260,7 @@ class TestDataFinder(unittest.TestCase):
             os.utime(onefile, (100, 100))
             twofile = os.path.join(temp_dir, 'foo2.dm4')
             open(twofile, 'a').close()
-            os.utime(onefile, (200, 200))
+            os.utime(twofile, (20000, 20000))
 
             filefinder = SecondYoungest(temp_dir, '.dm4', ['foo'])
             res = filefinder.get_next_file()
