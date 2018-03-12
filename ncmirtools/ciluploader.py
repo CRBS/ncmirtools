@@ -2,6 +2,7 @@
 
 import sys
 import logging
+import argparse
 
 
 from ncmirtools.kiosk.transfer import SftpTransfer
@@ -55,13 +56,15 @@ def _get_argument_parser(subparsers):
 
     """.format(config_file=', '.join(con.get_config_files()),
                homedir=HOMEDIR_ARG)
+    help_formatter = argparse.RawDescriptionHelpFormatter
+
     parser = subparsers.add_parser('cilupload',
                                    help='Uploads data to Cell Image '
                                         'Library (CIL)',
-                                   description=desc)
+                                   description=desc,
+                                   formatter_class=help_formatter)
 
     parser.add_argument("data", help='Data file to upload, can be an image or movie')
-    parser.add_argument("json", help='JSON meta data file')
     parser.add_argument("--homedir", help='Sets alternate home directory '
                                           'under which the ' +
                                           NcmirToolsConfig.UCONFIG_FILE +
@@ -121,8 +124,13 @@ class CILUploader(object):
     def upload_and_register_data(self, data):
         """Uploads and registers data to CIL
         """
-        # self._transfer.transfer_file(data)
-        pass
+        self._transfer.connect()
+        transfer_err_msg, duration, bytes_transferred = self._transfer.transfer_file(data)
+        logger.info(str(transfer_err_msg) + ' took ' +
+                    str(duration) + ' seconds to transfer ' +
+                    str(bytes_transferred) + ' bytes')
+        self._transfer.disconnect()
+
 
 
 class CILUploaderFromConfigFactory(object):
@@ -133,6 +141,8 @@ class CILUploaderFromConfigFactory(object):
     USERNAME = 'username'
     HOST = 'host'
     DEST_DIR = 'destination_dir'
+    CON_TIMEOUT = '30'
+    PORT = '22'
 
     def __init__(self, con):
         """Constructor
@@ -144,7 +154,11 @@ class CILUploaderFromConfigFactory(object):
         """Creates CILUploader object from configuration passed into
            constructor
         """
-        return CILUploader(self._get_sftptransfer_from_config())
+        uploader, err = self._get_sftptransfer_from_config()
+        if uploader is None:
+            logger.error('Unable to initialize transfer: ' + str(err))
+            return None
+        return CILUploader(uploader)
     
     def _get_sftptransfer_from_config(self):
         """Gets sftp"""
@@ -174,9 +188,9 @@ class CILUploaderFromConfigFactory(object):
                           CILUploaderFromConfigFactory.DEST_DIR)
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
-                          CILUploaderFromConfigFactory.USER) is True:
+                          CILUploaderFromConfigFactory.USERNAME) is True:
             user = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
-                           CILUploaderFromConfigFactory.USER)
+                           CILUploaderFromConfigFactory.USERNAME)
         else:
             user = None
 
@@ -188,9 +202,9 @@ class CILUploaderFromConfigFactory(object):
             port = None
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
-                          CILUploaderFromConfigFactory.KEY) is True:
+                          CILUploaderFromConfigFactory.PRIVATE_KEY) is True:
             pkey = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
-                           CILUploaderFromConfigFactory.KEY)
+                           CILUploaderFromConfigFactory.PRIVATE_KEY)
         else:
             pkey = None
 
@@ -210,9 +224,12 @@ def run(theargs):
     """Runs ciluploader
     """
     sys.stdout.write("Hello from ciluploader\n")
-    con = _get_and_verifyconfigparserconfig(theargs)
+    con,err = _get_and_verifyconfigparserconfig(theargs)
+    if con is None:
+        logger.error('No configuration: ' + str(err))
     fac = CILUploaderFromConfigFactory(con)
     uploader = fac.get_ciluploader()
-    uploader.upload_and_register_data(theargs.data)
+    if uploader is not None:
+        uploader.upload_and_register_data(theargs.data)
 
     return
