@@ -36,6 +36,8 @@ def setup_logging(thelogger,
     logging.getLogger('ncmirtools.imagetokiosk').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.kiosk.transfer').setLevel(numericloglevel)
     logging.getLogger('ncmirtools.kiosk.datafinder').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.ciluploader').setLevel(numericloglevel)
+    logging.getLogger('ncmirtools.ncmirtool').setLevel(numericloglevel)
 
 
 class ConfigMissingError(Exception):
@@ -77,13 +79,19 @@ class NcmirToolsConfig(object):
         """Sets alternate home directory
         :param path: Alternate home directory path
         """
-        self._homedir = path
+        if path is not None and '~' in path:
+            self._homedir = os.path.expanduser(path)
+        else:
+            self._homedir = path
 
     def set_etc_directory(self, path):
         """Sets alternate etc directory
         :param path: alternate etc directory path
         """
-        self._etcdir = path
+        if path is not None and '~' in path:
+            self._etcdir = os.path.expanduser(path)
+        else:
+            self._etcdir = path
 
     def get_home_directory(self):
         """Returns home directory path
