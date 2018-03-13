@@ -1,8 +1,11 @@
 #! /usr/bin/env python
 
+import os
 import sys
 import logging
 import argparse
+import requests
+from requests.auth import HTTPBasicAuth
 
 
 from ncmirtools.kiosk.transfer import SftpTransfer
@@ -53,9 +56,16 @@ def _get_argument_parser(subparsers):
          username         = <ssh username>
          host             = <remote CIL server>
          destination_dir  = <remote CIL directory>
+         {resturl}        = <url for rest service ie http://cilrest.crbs.ucsd.edu>
+         {restuser}       = <user login for rest service>
+         {restpass}       = <user password for rest service>
+         
 
     """.format(config_file=', '.join(con.get_config_files()),
-               homedir=HOMEDIR_ARG)
+               homedir=HOMEDIR_ARG,
+               resturl=CILUploaderFromConfigFactory.REST_URL,
+               restuser=CILUploaderFromConfigFactory.REST_USER,
+               restpass=CILUploaderFromConfigFactory.REST_PASS)
     help_formatter = argparse.RawDescriptionHelpFormatter
 
     parser = subparsers.add_parser('cilupload',
@@ -116,21 +126,37 @@ def _get_and_verifyconfigparserconfig(theargs):
 
 class CILUploader(object):
     """Uploads and registers data with Cell Image Library"""
-    def __init__(self, transfer_obj):
+    def __init__(self, transfer_obj, resturl=None, restuser=None,
+                 restpassword=None):
         """Constructor
         """
         self._transfer = transfer_obj
+        self._url = resturl
+        self._user = restuser
+        self._pass = restpassword
 
     def upload_and_register_data(self, data):
         """Uploads and registers data to CIL
         """
         self._transfer.connect()
         transfer_err_msg, duration, bytes_transferred = self._transfer.transfer_file(data)
-        logger.info(str(transfer_err_msg) + ' took ' +
-                    str(duration) + ' seconds to transfer ' +
-                    str(bytes_transferred) + ' bytes')
         self._transfer.disconnect()
 
+        if transfer_err_msg is not None:
+            logger.error('Error trying to upload: ' + transfer_err_msg)
+            return
+        else:
+            logger.info(data + ' file took ' +
+                    str(duration) + ' seconds to transfer ' +
+                    str(bytes_transferred) + ' bytes')
+            dest_file = os.path.join(self._transfer.get_destination_directory(),
+                                     os.path.basename(data))
+            r = requests.post(self._url + '/upload_rest/upload_entry',
+                              json={'File_path': dest_file},
+                              auth=HTTPBasicAuth(self._user, self._pass))
+            logger.info(str(r))
+            logger.info(str(r.text))
+            logger.info(str(r.json()))
 
 
 class CILUploaderFromConfigFactory(object):
@@ -143,6 +169,10 @@ class CILUploaderFromConfigFactory(object):
     DEST_DIR = 'destination_dir'
     CON_TIMEOUT = '30'
     PORT = '22'
+    REST_URL = 'resturl'
+    REST_USER = 'restusername'
+    REST_PASS = 'restpassword'
+
 
     def __init__(self, con):
         """Constructor
@@ -158,8 +188,48 @@ class CILUploaderFromConfigFactory(object):
         if uploader is None:
             logger.error('Unable to initialize transfer: ' + str(err))
             return None
-        return CILUploader(uploader)
-    
+
+        resturl, restuser, restpass, errmsg = self._get_rest_info_from_config()
+        if errmsg is not None:
+            logger.error('Got error message parsing config: ' + errmsg)
+        return CILUploader(uploader, resturl=resturl, restuser=restuser,
+                           restpassword=restpass)
+
+    def _get_rest_info_from_config(self):
+        """Gets rest configuration information
+        """
+        con = self._config
+        if con is None:
+            return (None, None, None, 'No configuration passed into ' +
+                    'CILUploaderFromConfigFactory')
+        if con.has_section(CILUploaderFromConfigFactory.CONFIG_SECTION) is False:
+            return (None, None, None,
+                    ('No [' + CILUploaderFromConfigFactory.CONFIG_SECTION +
+                     '] section found in configuration.'))
+
+        if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                          CILUploaderFromConfigFactory.REST_URL) is False:
+            return None, None, None, ('No ' + CILUploaderFromConfigFactory.REST_URL +
+                          ' option found in configuration.')
+        rest_url = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                           CILUploaderFromConfigFactory.REST_URL)
+
+        if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                          CILUploaderFromConfigFactory.REST_USER) is False:
+            return None, None, None, ('No ' + CILUploaderFromConfigFactory.REST_USER +
+                          ' option found in configuration.')
+        rest_user = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                            CILUploaderFromConfigFactory.REST_USER)
+
+        if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                          CILUploaderFromConfigFactory.REST_PASS) is False:
+            return None, None, None, ('No ' + CILUploaderFromConfigFactory.REST_PASS +
+                          ' option found in configuration.')
+        rest_pass = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                           CILUploaderFromConfigFactory.REST_PASS)
+
+        return rest_url, rest_user, rest_pass, None
+
     def _get_sftptransfer_from_config(self):
         """Gets sftp"""
         con = self._config
