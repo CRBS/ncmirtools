@@ -91,10 +91,16 @@ def _get_run_help_string(theargs):
     :returns: human readable string telling user how to invoke help.
               Ex: Please run <program> -h for more information.
     """
-    return 'Please run ' + theargs.program + ' -h ' + 'for more information.'
+    progname = 'Unknown'
+    try:
+        progname = theargs.program
+    except AttributeError:
+        pass
+
+    return 'Please run ' + progname + ' -h ' + 'for more information.'
 
 
-def _get_and_verifyconfigparserconfig(theargs):
+def _get_and_verifyconfigparserconfig(theargs, altconfig=None):
     """Loads configuration
     :param theargs: Object with parameters set from _parse_arguments()
                     This method just looks at theargs.homedir and
@@ -103,14 +109,15 @@ def _get_and_verifyconfigparserconfig(theargs):
                     configuration file
     :returns configparse.ConfigParser object
     """
-    config = NcmirToolsConfig()
-    try:
-        if theargs.homedir is not None:
-            logger.info('Setting home directory to: ' + theargs.homedir)
-            config.set_home_directory(theargs.homedir)
-    except AttributeError:
-        logger.debug('Caught AttributeError when examining ' +
-                     HOMEDIR_ARG + ' value')
+    if altconfig is not None:
+        config = altconfig
+    else:
+        config = NcmirToolsConfig()
+
+    if theargs.homedir is not None:
+        logger.info('Setting home directory to: ' + theargs.homedir)
+        config.set_home_directory(theargs.homedir)
+
     try:
         con = config.get_config()
     except ConfigMissingError as e:
