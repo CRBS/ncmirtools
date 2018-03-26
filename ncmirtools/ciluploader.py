@@ -52,10 +52,11 @@ def get_argument_parser(subparsers):
          
          [ciluploader]
          
-         private_key      = <path to private ssh key>
-         username         = <ssh username>
-         host             = <remote CIL server>
-         destination_dir  = <remote CIL directory>
+         {pkey}      = <path to private ssh key>
+         {pkpass}    = <private ssh key passphrase>
+         {user}         = <ssh username>
+         {host}             = <remote CIL server>
+         {dest}  = <remote CIL directory>
          {resturl}        = <url for rest service ie http://cilrest.crbs.ucsd.edu>
          {restuser}       = <user login for rest service>
          {restpass}       = <user password for rest service>
@@ -63,6 +64,11 @@ def get_argument_parser(subparsers):
 
     """.format(config_file=', '.join(con.get_config_files()),
                homedir=HOMEDIR_ARG,
+               user=CILUploaderFromConfigFactory.USERNAME,
+               host=CILUploaderFromConfigFactory.HOST,
+               dest=CILUploaderFromConfigFactory.DEST_DIR,
+               pkey=CILUploaderFromConfigFactory.PRIVATE_KEY,
+               pkpass=CILUploaderFromConfigFactory.PRIVATE_KEY_PASS,
                resturl=CILUploaderFromConfigFactory.REST_URL,
                restuser=CILUploaderFromConfigFactory.REST_USER,
                restpass=CILUploaderFromConfigFactory.REST_PASS)
@@ -174,6 +180,7 @@ class CILUploaderFromConfigFactory(object):
     """
     CONFIG_SECTION = 'ciluploader'
     PRIVATE_KEY = 'private_key'
+    PRIVATE_KEY_PASS = 'private_key_passphrase'
     USERNAME = 'username'
     HOST = 'host'
     DEST_DIR = 'destination_dir'
@@ -295,9 +302,18 @@ class CILUploaderFromConfigFactory(object):
         else:
             con_time = None
 
+        if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                          CILUploaderFromConfigFactory.PRIVATE_KEY_PASS) is True:
+            passk = int(con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                               CILUploaderFromConfigFactory.PRIVATE_KEY_PASS))
+        else:
+            passk = None
+
+
         return SftpTransfer(host, destdir, username=user,
                             port=port, privatekeyfile=pkey,
-                            connect_timeout=con_time), None
+                            connect_timeout=con_time,
+                            passphrase=passk), None
 
 
 def run(theargs):
