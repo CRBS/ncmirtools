@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 HOMEDIR_ARG = '--homedir'
 
 
-def _get_argument_parser(subparsers):
+def get_argument_parser(subparsers):
     """Parses command line arguments using argparse.
     """
     con = NcmirToolsConfig()
@@ -144,7 +144,7 @@ class CILUploader(object):
 
         if transfer_err_msg is not None:
             logger.error('Error trying to upload: ' + transfer_err_msg)
-            return
+            return 1
         else:
             logger.info(data + ' file took ' +
                     str(duration) + ' seconds to transfer ' +
@@ -157,6 +157,9 @@ class CILUploader(object):
             logger.info(str(r))
             logger.info(str(r.text))
             logger.info(str(r.json()))
+            if r.status_code is 200:
+                return 0
+            return 2
 
 
 class CILUploaderFromConfigFactory(object):
@@ -297,9 +300,10 @@ def run(theargs):
     con,err = _get_and_verifyconfigparserconfig(theargs)
     if con is None:
         logger.error('No configuration: ' + str(err))
+        return 5
     fac = CILUploaderFromConfigFactory(con)
     uploader = fac.get_ciluploader()
     if uploader is not None:
-        uploader.upload_and_register_data(theargs.data)
+        return uploader.upload_and_register_data(theargs.data)
 
-    return
+    return 3
