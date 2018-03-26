@@ -32,9 +32,9 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=help_formatter)
 
-    subparsers = parser.add_subparsers(help='sub-command', description='this is something',
-                                       dest='subcommand')
-    ciluploader._get_argument_parser(subparsers)
+    subparsers = parser.add_subparsers(description='Command to run. ',
+                                       dest='command')
+    ciluploader.get_argument_parser(subparsers)
 
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
                         'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
@@ -57,12 +57,13 @@ def main(arglist):
     theargs.version = ncmirtools.__version__
     config.setup_logging(logger, loglevel=theargs.loglevel)
     try:
-        logger.debug('Sub command is: ' + str(theargs.subcommand))
-        if theargs.subcommand == 'cilupload':
-            logger.debug('Running ciluploader.run ' + str(theargs.subcommand))
-            ciluploader.run(theargs)
+        logger.debug('Command is: ' + str(theargs.command))
+        if theargs.command == 'cilupload':
+            logger.debug('Running ciluploader.run ' + str(theargs.command))
+            return ciluploader.run(theargs)
     finally:
         logging.shutdown()
+    return 99
 
 
 if __name__ == '__main__':  # pragma: no cover
