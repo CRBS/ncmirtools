@@ -32,8 +32,7 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=help_formatter)
 
-    subparsers = parser.add_subparsers(description='Command to run. ',
-                                       dest='command')
+    subparsers = parser.add_subparsers(dest='command')
     ciluploader.get_argument_parser(subparsers)
 
     parser.add_argument("--log", dest="loglevel", choices=['DEBUG',
@@ -48,6 +47,7 @@ def _parse_arguments(desc, args):
 
 def main(arglist):
     desc = """
+    
               Version {version}
 
               """.format(version=ncmirtools.__version__)
