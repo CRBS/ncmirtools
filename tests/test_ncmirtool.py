@@ -7,11 +7,7 @@ test_lookup
 
 Tests for `lookup` module.
 """
-import re
-import os
 import sys
-import tempfile
-import shutil
 import unittest
 
 from ncmirtools import ncmirtool

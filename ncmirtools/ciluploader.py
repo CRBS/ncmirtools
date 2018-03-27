@@ -28,10 +28,10 @@ def get_argument_parser(subparsers):
     desc = """
          This tool uploads a file to the Cell Image Library (CIL).
          This tool then outputs an ID registered with the CIL upon success.
-        
-         When run this script will output the following to standard out 
+
+         When run this script will output the following to standard out
          for a successful run with a zero exit code:
-         
+
          Success: True
          Id: <CIL Id>
          Destination path: <Path on remote server where file was uploaded>
@@ -41,10 +41,10 @@ def get_argument_parser(subparsers):
 
          Upon failure a non-zero exit code will be returned and log
          messages will be output at ERROR level denoting the problems along
-         with an Exception. 
-         
-         NOTE: 
-         
+         with an Exception.
+
+         NOTE:
+
          This script requires a configuration file which contains
          information on what data to sync to where
 
@@ -55,29 +55,29 @@ def get_argument_parser(subparsers):
          {config_file}
 
          The configuration file should have values in this format:
-         
+
          [ciluploader]
-         
+
          {pkey}      = <path to private ssh key>
          {pkpass}    = <private ssh key passphrase>
          {user}         = <ssh username>
          {host}             = <remote CIL server>
          {dest}  = <remote CIL directory>
-         {resturl}        = <url for rest service ie http://cilrest.crbs.ucsd.edu>
+         {resturl}        = <REST url service ie http://cilrest.crbs.ucsd.edu>
          {restuser}       = <user login for rest service>
          {restpass}       = <user password for rest service>
-         
+
          NOTE: If private key does not need a password just comment out
-               or omit {pkpass} parameter from configuration. 
-               
+               or omit {pkpass} parameter from configuration.
+
                Also note, if private key password is put in configuration
-               file be sure to restrict read access. 
-               
-               Example: For Linux if file is in home directory: 
-               chmod 0600 ~/.ncmirtools.conf  
-               
+               file be sure to restrict read access.
+
+               Example: For Linux if file is in home directory:
+               chmod 0600 ~/.ncmirtools.conf
+
          Example:
-         
+
          {pkey}      = /home/foo/.ssh/mykey
          {pkpass}    = 12345
          {user}         = ciluploader
@@ -86,8 +86,7 @@ def get_argument_parser(subparsers):
          {resturl}        = http://cilrest.crbs.ucsd.edu
          {restuser}       = cilrestuser
          {restpass}       = 67890
-         
-         
+
 
     """.format(config_file=', '.join(con.get_config_files()),
                homedir=HOMEDIR_ARG,
@@ -168,7 +167,7 @@ class CILUploaderResult(object):
     """Contains result from upload of data by CILUploaderResult
     """
     def __init__(self, success_status, errmsg=None,
-                 id=None,bytes_transferred=None,
+                 id=None, bytes_transferred=None,
                  duration=None, dest_path=None):
         """Constructor
         """
@@ -312,7 +311,7 @@ class CILUploader(object):
             if r.status_code is 200:
                 success = True
                 res_dict = json.loads(r.text)
-                if res_dict['success'] is  True:
+                if res_dict['success'] is True:
                     result.set_success_status(True)
                     result.set_id(res_dict['ID'])
                 else:
@@ -376,7 +375,8 @@ class CILUploaderFromConfigFactory(object):
         """
         con = self._config
 
-        if con.has_section(CILUploaderFromConfigFactory.CONFIG_SECTION) is False:
+        if con.has_section(CILUploaderFromConfigFactory.
+                           CONFIG_SECTION) is False:
             return (None, None, None,
                     ('No [' + CILUploaderFromConfigFactory.CONFIG_SECTION +
                      '] section found in configuration.'))
@@ -411,8 +411,10 @@ class CILUploaderFromConfigFactory(object):
         """Gets sftp"""
         con = self._config
 
-        if con.has_section(CILUploaderFromConfigFactory.CONFIG_SECTION) is False:
-            return None, ('No [' + CILUploaderFromConfigFactory.CONFIG_SECTION +
+        if con.has_section(CILUploaderFromConfigFactory.
+                           CONFIG_SECTION) is False:
+            return None, ('No [' +
+                          CILUploaderFromConfigFactory.CONFIG_SECTION +
                           '] section found in configuration.')
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
@@ -460,7 +462,8 @@ class CILUploaderFromConfigFactory(object):
             con_time = None
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
-                          CILUploaderFromConfigFactory.PRIVATE_KEY_PASS) is True:
+                          CILUploaderFromConfigFactory.
+                          PRIVATE_KEY_PASS) is True:
             passk = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
                             CILUploaderFromConfigFactory.PRIVATE_KEY_PASS)
         else:
@@ -475,7 +478,7 @@ class CILUploaderFromConfigFactory(object):
 def run(theargs):
     """Runs ciluploader
     """
-    con,err = _get_and_verifyconfigparserconfig(theargs)
+    con, err = _get_and_verifyconfigparserconfig(theargs)
     if con is None:
         logger.error('No configuration: ' + str(err))
         return 1

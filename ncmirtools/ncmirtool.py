@@ -43,7 +43,7 @@ def _parse_arguments(desc, args):
 
 def main(arglist):
     desc = """
-    
+
               Version {version}
 
               """.format(version=ncmirtools.__version__)

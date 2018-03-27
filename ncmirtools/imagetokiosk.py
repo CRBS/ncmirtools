@@ -13,7 +13,6 @@ from ncmirtools.kiosk.transfer import SftpTransferFromConfigFactory
 from ncmirtools.kiosk.datafinder import SecondYoungestFromConfigFactory
 
 
-
 # create logger
 logger = logging.getLogger('ncmirtools.imagetokiosk')
 

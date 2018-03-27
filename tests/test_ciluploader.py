@@ -28,6 +28,7 @@ class Parameters(object):
     """dummy"""
     pass
 
+
 class TestCILUploader(unittest.TestCase):
 
     def setUp(self):
@@ -45,7 +46,7 @@ class TestCILUploader(unittest.TestCase):
                                            dest='command')
         ciluploader.get_argument_parser(subparsers)
 
-        pargs =  parser.parse_args(['cilupload', 'hi'])
+        pargs = parser.parse_args(['cilupload', 'hi'])
         self.assertEqual(pargs.command, 'cilupload')
         self.assertEqual(pargs.data, 'hi')
         self.assertEqual(pargs.homedir, '~')
@@ -64,8 +65,9 @@ class TestCILUploader(unittest.TestCase):
             ntc.set_home_directory(temp_dir)
             p = Parameters()
             p.homedir = None
-            c, err = ciluploader._get_and_verifyconfigparserconfig(p,
-                                                                   altconfig=ntc)
+            c, err = ciluploader.\
+                _get_and_verifyconfigparserconfig(p,
+                                                  altconfig=ntc)
             self.assertEqual(c, None)
             self.assertTrue('No configuration file' in err)
 
@@ -132,7 +134,7 @@ class TestCILUploader(unittest.TestCase):
         self.assertEqual(res.get_error_message(), 'Transfer object was none, '
                                                   'cannot complete transfer')
 
-        uploader = CILUploader(Parameters(),restuser='foo',
+        uploader = CILUploader(Parameters(), restuser='foo',
                                restpassword='pass')
         res = uploader.upload_and_register_data('/foo')
         self.assertEqual(res.get_success_status(), False)
@@ -162,7 +164,7 @@ class TestCILUploader(unittest.TestCase):
         mock_trans.connect = Mock()
         mock_trans.transfer_file = Mock(return_value=('bad', 0, -1))
         mock_trans.disconnect = Mock()
-        uploader = CILUploader(mock_trans,resturl='https://foo.com',
+        uploader = CILUploader(mock_trans, resturl='https://foo.com',
                                restuser='bob', restpassword='haha')
         res = uploader.upload_and_register_data('/foo')
         self.assertEqual(res.get_success_status(), False)

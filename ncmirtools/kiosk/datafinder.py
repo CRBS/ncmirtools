@@ -113,7 +113,6 @@ class SecondYoungest(FileFinder):
         files_wrong_suffix_count = 0
         start_time = int(time.time())
         ex_list = self._list_of_dirs_to_exclude
-        import sys
         for img_file in _get_files_in_directory_generator(self._searchdir,
                                                           ex_list):
 

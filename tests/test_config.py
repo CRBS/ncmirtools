@@ -136,5 +136,6 @@ class TestConfig(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+
 if __name__ == '__main__':
     sys.exit(unittest.main())

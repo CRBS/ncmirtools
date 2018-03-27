@@ -156,7 +156,7 @@ U+27XptJXHsIBqoIbIbx+/TVejFlv8Lp46SdtvgKPXY2pZhtn+3icQ==
         try:
             sftp.connect()
             self.fail('Expected some error')
-        except:
+        except Exception:
             pass
 
     def test_connect_alt_ssh_set(self):
