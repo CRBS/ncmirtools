@@ -224,6 +224,166 @@ class TestCILUploader(unittest.TestCase):
         except Exception:
             pass
 
+    def test_ciluploaderfromconfigfactory_get_sftptransfer_from_config(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            con = configparser.ConfigParser()
+            fac = CILUploaderFromConfigFactory(con)
+            trans, err = fac._get_sftptransfer_from_config()
+            self.assertEqual(trans, None)
+            self.assertEqual(err, 'No [' +
+                             CILUploaderFromConfigFactory.CONFIG_SECTION +
+                             '] section found in configuration.')
+            con.add_section(CILUploaderFromConfigFactory.CONFIG_SECTION)
+
+            trans, err = fac._get_sftptransfer_from_config()
+            self.assertEqual(trans, None)
+            self.assertEqual(err, 'No ' +
+                             CILUploaderFromConfigFactory.HOST +
+                             ' option found in configuration.')
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.HOST, 'thehost')
+
+            trans, err = fac._get_sftptransfer_from_config()
+            self.assertEqual(trans, None)
+            self.assertEqual(err, 'No ' +
+                             CILUploaderFromConfigFactory.DEST_DIR +
+                             ' option found in configuration.')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.DEST_DIR, 'dest')
+
+            trans, err = fac._get_sftptransfer_from_config()
+            self.assertTrue(trans is not None)
+            self.assertEqual(err, None)
+            self.assertEqual(trans.get_host(), 'thehost')
+            self.assertEqual(trans.get_destination_directory(), 'dest')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.USERNAME, 'theuser')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.PORT, '12345')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.CON_TIMEOUT, '100')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.PRIVATE_KEY_PASS,
+                    'theprivatekeypass')
+
+            trans, err = fac._get_sftptransfer_from_config()
+            self.assertTrue(trans is not None)
+            self.assertEqual(err, None)
+            self.assertEqual(trans.get_host(), 'thehost')
+            self.assertEqual(trans.get_destination_directory(), 'dest')
+            self.assertEqual(trans.get_port(), 12345)
+            self.assertEqual(trans.get_connect_timeout(), 100)
+            self.assertEqual(trans.get_username(), 'theuser')
+            self.assertEqual(trans.get_passphrase(), 'theprivatekeypass')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.PRIVATE_KEY,
+                    os.path.join(temp_dir, 'foo'))
+            try:
+                fac._get_sftptransfer_from_config()
+                self.fail('Expect SftpTransfer to fail cause private key'
+                          'is invalid')
+            except IOError:
+                pass
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_ciluploaderfromconfigfactory_get_rest_info_from_config(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            con = configparser.ConfigParser()
+            fac = CILUploaderFromConfigFactory(con)
+            url, user, user_pass, err = fac._get_rest_info_from_config()
+            self.assertEqual(url, None)
+            self.assertEqual(user, None)
+            self.assertEqual(user_pass, None)
+            self.assertEqual(err, 'No [' +
+                             CILUploaderFromConfigFactory.CONFIG_SECTION +
+                             '] section found in configuration.')
+            con.add_section(CILUploaderFromConfigFactory.CONFIG_SECTION)
+
+            url, user, user_pass, err = fac._get_rest_info_from_config()
+            self.assertEqual(url, None)
+            self.assertEqual(user, None)
+            self.assertEqual(user_pass, None)
+            self.assertEqual(err, 'No ' +
+                             CILUploaderFromConfigFactory.REST_URL +
+                             ' option found in configuration.')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.REST_URL, 'https://foo')
+            url, user, user_pass, err = fac._get_rest_info_from_config()
+            self.assertEqual(url, None)
+            self.assertEqual(user, None)
+            self.assertEqual(user_pass, None)
+            self.assertEqual(err, 'No ' +
+                             CILUploaderFromConfigFactory.REST_USER +
+                             ' option found in configuration.')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.REST_USER, 'someuser')
+            url, user, user_pass, err = fac._get_rest_info_from_config()
+            self.assertEqual(url, None)
+            self.assertEqual(user, None)
+            self.assertEqual(user_pass, None)
+            self.assertEqual(err, 'No ' +
+                             CILUploaderFromConfigFactory.REST_PASS +
+                             ' option found in configuration.')
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.REST_PASS, 'somepass')
+            url, user, user_pass, err = fac._get_rest_info_from_config()
+            self.assertEqual(url, 'https://foo')
+            self.assertEqual(user, 'someuser')
+            self.assertEqual(user_pass, 'somepass')
+            self.assertEqual(err, None)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_ciluploaderfromconfigfactory_get_ciluploader(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            fac = CILUploaderFromConfigFactory(None)
+            res = fac.get_ciluploader()
+            self.assertEqual(res, None)
+
+            con = configparser.ConfigParser()
+            fac = CILUploaderFromConfigFactory(con)
+            res = fac.get_ciluploader()
+            self.assertEqual(res, None)
+
+            con.add_section(CILUploaderFromConfigFactory.CONFIG_SECTION)
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.HOST, 'thehost')
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.DEST_DIR, 'dest')
+
+            fac = CILUploaderFromConfigFactory(con)
+            res = fac.get_ciluploader()
+            self.assertEqual(res, None)
+
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.REST_URL, 'https://foo')
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.REST_USER, 'someuser')
+            con.set(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                    CILUploaderFromConfigFactory.REST_PASS, 'somepass')
+            fac = CILUploaderFromConfigFactory(con)
+            res = fac.get_ciluploader()
+            self.assertTrue(isinstance(res, CILUploader))
+
+
+
+
+        finally:
+            shutil.rmtree(temp_dir)
+
 
 if __name__ == '__main__':
     sys.exit(unittest.main())

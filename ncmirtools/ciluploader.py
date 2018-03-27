@@ -205,7 +205,6 @@ class CILUploader(object):
                     session.close()
 
 
-
 class CILUploaderFromConfigFactory(object):
     """Creates CILUploader object
     """
@@ -221,7 +220,6 @@ class CILUploaderFromConfigFactory(object):
     REST_USER = 'restusername'
     REST_PASS = 'restpassword'
 
-
     def __init__(self, con):
         """Constructor
         :param con: configparser object from NcmirToolsConfig.get_config()
@@ -232,6 +230,10 @@ class CILUploaderFromConfigFactory(object):
         """Creates CILUploader object from configuration passed into
            constructor
         """
+        if self._config is None:
+            logger.error('No configuration to parser')
+            return None
+
         uploader, err = self._get_sftptransfer_from_config()
         if uploader is None:
             logger.error('Unable to initialize transfer: ' + str(err))
@@ -239,7 +241,9 @@ class CILUploaderFromConfigFactory(object):
 
         resturl, restuser, restpass, errmsg = self._get_rest_info_from_config()
         if errmsg is not None:
-            logger.error('Got error message parsing config: ' + errmsg)
+            logger.error('Unable to get rest info from config: ' + errmsg)
+            return None
+
         return CILUploader(uploader, resturl=resturl, restuser=restuser,
                            restpassword=restpass)
 
@@ -247,9 +251,7 @@ class CILUploaderFromConfigFactory(object):
         """Gets rest configuration information
         """
         con = self._config
-        if con is None:
-            return (None, None, None, 'No configuration passed into ' +
-                    'CILUploaderFromConfigFactory')
+
         if con.has_section(CILUploaderFromConfigFactory.CONFIG_SECTION) is False:
             return (None, None, None,
                     ('No [' + CILUploaderFromConfigFactory.CONFIG_SECTION +
@@ -284,9 +286,6 @@ class CILUploaderFromConfigFactory(object):
     def _get_sftptransfer_from_config(self):
         """Gets sftp"""
         con = self._config
-        if con is None:
-            return None, ('No configuration passed into ' +
-                          'CILUploaderFromConfigFactory')
 
         if con.has_section(CILUploaderFromConfigFactory.CONFIG_SECTION) is False:
             return None, ('No [' + CILUploaderFromConfigFactory.CONFIG_SECTION +
@@ -338,8 +337,8 @@ class CILUploaderFromConfigFactory(object):
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
                           CILUploaderFromConfigFactory.PRIVATE_KEY_PASS) is True:
-            passk = int(con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
-                               CILUploaderFromConfigFactory.PRIVATE_KEY_PASS))
+            passk = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
+                            CILUploaderFromConfigFactory.PRIVATE_KEY_PASS)
         else:
             passk = None
 
