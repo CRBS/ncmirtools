@@ -7,7 +7,6 @@ test_lookup
 
 Tests for `lookup` module.
 """
-import re
 import os
 import sys
 import tempfile
@@ -15,6 +14,8 @@ import shutil
 import unittest
 import argparse
 import configparser
+
+from mock import Mock
 
 from ncmirtools import ciluploader
 from ncmirtools.config import NcmirToolsConfig
@@ -122,6 +123,107 @@ class TestCILUploader(unittest.TestCase):
             self.assertEqual(val, 'yy')
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_ciluploader_upload_and_register_data_no_invalid_params(self):
+        uploader = CILUploader(None)
+        res = uploader.upload_and_register_data('/foo')
+        self.assertEqual(res, 1)
+
+        uploader = CILUploader(Parameters(),restuser='foo',
+                               restpassword='pass')
+        res = uploader.upload_and_register_data('/foo')
+        self.assertEqual(res, 2)
+
+        uploader = CILUploader(Parameters(), resturl='foo',
+                               restpassword='pass')
+        res = uploader.upload_and_register_data('/foo')
+        self.assertEqual(res, 3)
+
+        uploader = CILUploader(Parameters(), restuser='foo',
+                               resturl='pass')
+        res = uploader.upload_and_register_data('/foo')
+        self.assertEqual(res, 4)
+
+        uploader = CILUploader(Parameters(), restuser='foo',
+                               resturl='ha',
+                               restpassword='pass')
+        res = uploader.upload_and_register_data(None)
+        self.assertEqual(res, 5)
+
+    def test_ciluploader_upload_and_register_data_no_transfer_error(self):
+        mock_trans = Parameters()
+        mock_trans.connect = Mock()
+        mock_trans.transfer_file = Mock(return_value=('bad', 0, -1))
+        mock_trans.disconnect = Mock()
+        uploader = CILUploader(mock_trans,resturl='https://foo.com',
+                               restuser='bob', restpassword='haha')
+        res = uploader.upload_and_register_data('/foo')
+        self.assertEqual(res, 6)
+
+        mock_trans.connect.assert_called()
+        mock_trans.disconnect.assert_called()
+        mock_trans.transfer_file.assert_called_with('/foo')
+
+    def test_ciluploader_upload_and_register_data_no_post_fails(self):
+        mock_trans = Parameters()
+        mock_trans.connect = Mock()
+        mock_trans.transfer_file = Mock(return_value=(None, 10, 100))
+        mock_trans.get_destination_directory = Mock(return_value='/dest')
+        mock_trans.disconnect = Mock()
+
+        mockresp = Parameters()
+        mockresp.text = ''
+        mockresp.json = Mock(return_value='{"success":true,"ID":13}')
+        mockresp.status_code = 404
+        mock_sess = Parameters()
+        mock_sess.post = Mock(return_value=mockresp)
+
+        uploader = CILUploader(mock_trans, resturl='https://foo.com',
+                               restuser='bob', restpassword='haha')
+
+        res = uploader.upload_and_register_data('/foo',
+                                                session=mock_sess)
+        self.assertEqual(res, 7)
+        mock_trans.get_destination_directory.assert_called()
+
+    def test_ciluploader_upload_and_register_data_success(self):
+        mock_trans = Parameters()
+        mock_trans.connect = Mock()
+        mock_trans.transfer_file = Mock(return_value=(None, 10, 100))
+        mock_trans.get_destination_directory = Mock(return_value='/dest')
+        mock_trans.disconnect = Mock()
+
+        mockresp = Parameters()
+        mockresp.text = ''
+        mockresp.json = Mock(return_value='{"success":true,"ID":13}')
+        mockresp.status_code = 200
+        mock_sess = Parameters()
+        mock_sess.post = Mock(return_value=mockresp)
+
+        uploader = CILUploader(mock_trans, resturl='https://foo.com',
+                               restuser='bob', restpassword='haha')
+
+        res = uploader.upload_and_register_data('/foo',
+                                                session=mock_sess)
+        self.assertEqual(res, 0)
+        mock_trans.get_destination_directory.assert_called()
+
+    def test_ciluploader_upload_and_register_data_self_make_session(self):
+        mock_trans = Parameters()
+        mock_trans.connect = Mock()
+        mock_trans.transfer_file = Mock(return_value=(None, 10, 100))
+        mock_trans.get_destination_directory = Mock(return_value='/dest')
+        mock_trans.disconnect = Mock()
+
+        uploader = CILUploader(mock_trans,
+                               resturl='https://asdlfkjasdf.invalid',
+                               restuser='bob', restpassword='haha')
+
+        try:
+            uploader.upload_and_register_data('/foo')
+        except Exception:
+            pass
+
 
 if __name__ == '__main__':
     sys.exit(unittest.main())

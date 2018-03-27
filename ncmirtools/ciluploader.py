@@ -148,31 +148,62 @@ class CILUploader(object):
         self._user = restuser
         self._pass = restpassword
 
-    def upload_and_register_data(self, data):
+    def upload_and_register_data(self, data,
+                                 session=None):
         """Uploads and registers data to CIL
         """
+        if self._transfer is None:
+            logger.error('Transfer object was none, cannot complete transfer')
+            return 1
+
+        if self._url is None:
+            logger.error('Rest URL is None')
+            return 2
+
+        if self._user is None:
+            logger.error('Rest username is None')
+            return 3
+
+        if self._pass is None:
+            logger.error('Rest password is None')
+            return 4
+
+        if data is None:
+            logger.error('data is None')
+            return 5
+
         self._transfer.connect()
-        transfer_err_msg, duration, bytes_transferred = self._transfer.transfer_file(data)
+        (transfer_err_msg, duration,
+         bytes_transferred) = self._transfer.transfer_file(data)
         self._transfer.disconnect()
 
         if transfer_err_msg is not None:
             logger.error('Error trying to upload: ' + transfer_err_msg)
-            return 1
+            return 6
         else:
             logger.info(data + ' file took ' +
                     str(duration) + ' seconds to transfer ' +
                     str(bytes_transferred) + ' bytes')
-            dest_file = os.path.join(self._transfer.get_destination_directory(),
-                                     os.path.basename(data))
-            r = requests.post(self._url + '/upload_rest/upload_entry',
-                              json={'File_path': dest_file},
-                              auth=HTTPBasicAuth(self._user, self._pass))
-            logger.info(str(r))
-            logger.info(str(r.text))
-            logger.info(str(r.json()))
-            if r.status_code is 200:
-                return 0
-            return 2
+            dest_f = os.path.join(self._transfer.get_destination_directory(),
+                                  os.path.basename(data))
+            close_session = False
+            if session is None:
+                close_session = True
+                session = requests.Session()
+            try:
+                r = session.post(self._url + '/upload_rest/upload_entry',
+                                 json={'File_path': dest_f},
+                                 auth=HTTPBasicAuth(self._user, self._pass))
+                logger.info(str(r))
+                logger.info(str(r.text))
+                logger.info(str(r.json()))
+                if r.status_code is 200:
+                    return 0
+                return 7
+            finally:
+                if close_session is True:
+                    session.close()
+
 
 
 class CILUploaderFromConfigFactory(object):
@@ -226,24 +257,27 @@ class CILUploaderFromConfigFactory(object):
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
                           CILUploaderFromConfigFactory.REST_URL) is False:
-            return None, None, None, ('No ' + CILUploaderFromConfigFactory.REST_URL +
-                          ' option found in configuration.')
+            return None, None, None, ('No ' +
+                                      CILUploaderFromConfigFactory.REST_URL +
+                                      ' option found in configuration.')
         rest_url = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
                            CILUploaderFromConfigFactory.REST_URL)
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
                           CILUploaderFromConfigFactory.REST_USER) is False:
-            return None, None, None, ('No ' + CILUploaderFromConfigFactory.REST_USER +
-                          ' option found in configuration.')
+            return None, None, None, ('No ' +
+                                      CILUploaderFromConfigFactory.REST_USER +
+                                      ' option found in configuration.')
         rest_user = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
                             CILUploaderFromConfigFactory.REST_USER)
 
         if con.has_option(CILUploaderFromConfigFactory.CONFIG_SECTION,
                           CILUploaderFromConfigFactory.REST_PASS) is False:
-            return None, None, None, ('No ' + CILUploaderFromConfigFactory.REST_PASS +
-                          ' option found in configuration.')
+            return None, None, None, ('No ' +
+                                      CILUploaderFromConfigFactory.REST_PASS +
+                                      ' option found in configuration.')
         rest_pass = con.get(CILUploaderFromConfigFactory.CONFIG_SECTION,
-                           CILUploaderFromConfigFactory.REST_PASS)
+                            CILUploaderFromConfigFactory.REST_PASS)
 
         return rest_url, rest_user, rest_pass, None
 
@@ -308,7 +342,6 @@ class CILUploaderFromConfigFactory(object):
                                CILUploaderFromConfigFactory.PRIVATE_KEY_PASS))
         else:
             passk = None
-
 
         return SftpTransfer(host, destdir, username=user,
                             port=port, privatekeyfile=pkey,
