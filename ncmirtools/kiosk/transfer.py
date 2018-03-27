@@ -173,7 +173,8 @@ class SftpTransfer(Transfer):
             self._port = port
 
         if privatekeyfile is not None:
-            self._pkey = paramiko.RSAKey.from_private_key_file(privatekeyfile)
+            self._pkey = paramiko.RSAKey.from_private_key_file(privatekeyfile,
+                                                               passphrase)
         else:
             self._pkey = None
 
