@@ -304,6 +304,6 @@ class SftpTransfer(Transfer):
 
         logger.info('Transfer error message: ' + str(transfer_err_msg) +
                     ', elapsed time in secs ' + str(duration) +
-                    ', bytes transferred' +
+                    ', bytes transferred ' +
                     str(bytes_transferred))
         return transfer_err_msg, duration, bytes_transferred
