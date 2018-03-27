@@ -43,6 +43,10 @@ def get_argument_parser(subparsers):
          messages will be output at ERROR level denoting the problems along
          with an Exception.
 
+         WARNING: This implementation does not check if file has been uploaded
+                  already and will proceed to overwrite the file on the remote
+                  server and request a new CIL id via the REST service.
+
          NOTE:
 
          This script requires a configuration file which contains
@@ -58,14 +62,14 @@ def get_argument_parser(subparsers):
 
          [ciluploader]
 
-         {pkey}      = <path to private ssh key>
-         {pkpass}    = <private ssh key passphrase>
-         {user}         = <ssh username>
-         {host}             = <remote CIL server>
-         {dest}  = <remote CIL directory>
-         {resturl}        = <REST url service ie http://cilrest.crbs.ucsd.edu>
-         {restuser}       = <user login for rest service>
-         {restpass}       = <user password for rest service>
+         {pkey}             = <path to private ssh key>
+         {pkpass}  = <private ssh key passphrase>
+         {user}                = <ssh username>
+         {host}                    = <remote CIL server>
+         {dest}         = <remote CIL directory>
+         {resturl}                 = <REST url service>
+         {restuser}            = <user login for rest service>
+         {restpass}            = <user password for rest service>
 
          NOTE: If private key does not need a password just comment out
                or omit {pkpass} parameter from configuration.
@@ -78,14 +82,14 @@ def get_argument_parser(subparsers):
 
          Example:
 
-         {pkey}      = /home/foo/.ssh/mykey
-         {pkpass}    = 12345
-         {user}         = ciluploader
-         {host}             = cilupload.foo.invalid
-         {dest}  = /home/ciluploader/uploads
-         {resturl}        = http://cilrest.crbs.ucsd.edu
-         {restuser}       = cilrestuser
-         {restpass}       = 67890
+         {pkey}             = /home/foo/.ssh/mykey
+         {pkpass}  = 12345
+         {user}                = ciluploader
+         {host}                    = cilupload.foo.invalid
+         {dest}         = /home/ciluploader/uploads
+         {resturl}                 = http://cilrest.crbs.ucsd.edu
+         {restuser}            = cilrestuser
+         {restpass}            = 67890
 
 
     """.format(config_file=', '.join(con.get_config_files()),
