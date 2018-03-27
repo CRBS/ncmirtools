@@ -5,6 +5,7 @@ import sys
 import logging
 import argparse
 import requests
+import json
 from requests.auth import HTTPBasicAuth
 
 
@@ -25,17 +26,22 @@ def get_argument_parser(subparsers):
     """
     con = NcmirToolsConfig()
     desc = """
-         This tool uploads data to Cell Image Library (CIL) and registers
-         it with the CIL. This tool then outputs an ID registered with
-         the CIL upon success.
+         This tool uploads a file to the Cell Image Library (CIL).
+         This tool then outputs an ID registered with the CIL upon success.
         
          When run this script will output the following to standard out 
          for a successful run with a zero exit code:
          
-         CIL id: <id from CIL>
-         
+         Success: True
+         Id: <CIL Id>
+         Destination path: <Path on remote server where file was uploaded>
+         Bytes transferred: <Number bytes transferred>
+         Duration in seconds: <Number of seconds transfer took>
+         Error Message: <'None' upon success otherwise an error message>
+
          Upon failure a non-zero exit code will be returned and log
-         messages will be output at ERROR level denoting the problems.
+         messages will be output at ERROR level denoting the problems along
+         with an Exception. 
          
          NOTE: 
          
@@ -61,6 +67,27 @@ def get_argument_parser(subparsers):
          {restuser}       = <user login for rest service>
          {restpass}       = <user password for rest service>
          
+         NOTE: If private key does not need a password just comment out
+               or omit {pkpass} parameter from configuration. 
+               
+               Also note, if private key password is put in configuration
+               file be sure to restrict read access. 
+               
+               Example: For Linux if file is in home directory: 
+               chmod 0600 ~/.ncmirtools.conf  
+               
+         Example:
+         
+         {pkey}      = /home/foo/.ssh/mykey
+         {pkpass}    = 12345
+         {user}         = ciluploader
+         {host}             = cilupload.foo.invalid
+         {dest}  = /home/ciluploader/uploads
+         {resturl}        = http://cilrest.crbs.ucsd.edu
+         {restuser}       = cilrestuser
+         {restpass}       = 67890
+         
+         
 
     """.format(config_file=', '.join(con.get_config_files()),
                homedir=HOMEDIR_ARG,
@@ -80,7 +107,7 @@ def get_argument_parser(subparsers):
                                    description=desc,
                                    formatter_class=help_formatter)
 
-    parser.add_argument("data", help='Data file to upload, can be an image or movie')
+    parser.add_argument("data", help='Data file to upload, can be any file')
     parser.add_argument("--homedir", help='Sets alternate home directory '
                                           'under which the ' +
                                           NcmirToolsConfig.UCONFIG_FILE +
@@ -137,6 +164,73 @@ def _get_and_verifyconfigparserconfig(theargs, altconfig=None):
     return con, None
 
 
+class CILUploaderResult(object):
+    """Contains result from upload of data by CILUploaderResult
+    """
+    def __init__(self, success_status, errmsg=None,
+                 id=None,bytes_transferred=None,
+                 duration=None, dest_path=None):
+        """Constructor
+        """
+        self._success_status = success_status
+        self._errmsg = errmsg
+        self._id = id
+        self._duration = duration
+        self._dest_path = dest_path
+        self._bytes_transferred = bytes_transferred
+
+    def get_bytes_transferred(self):
+        """Gets bytes transferred
+        """
+        return self._bytes_transferred
+
+    def get_success_status(self):
+        """Gets True for success, or False/None otherwise
+        """
+        return self._success_status
+
+    def set_success_status(self, status):
+        self._success_status = status
+
+    def get_error_message(self):
+        """Gets error message or None
+        """
+        return self._errmsg
+
+    def set_error_message(self, errmsg):
+        self._errmsg = errmsg
+
+    def get_id(self):
+        """Gets id obtained from service
+        """
+        return self._id
+
+    def set_id(self, id):
+        """Sets id
+        """
+        self._id = id
+
+    def get_destination_path(self):
+        """Gets path of file on remote server
+        """
+        return self._dest_path
+
+    def get_duration(self):
+        """Gets duration"""
+        return self._duration
+
+    def as_string(self):
+        """Gets string representation of object
+        """
+        val = 'Success: ' + str(self._success_status) + '\n'
+        val += 'Id: ' + str(self._id) + '\n'
+        val += 'Destination path: ' + str(self._dest_path) + '\n'
+        val += 'Bytes transferred: ' + str(self._bytes_transferred) + '\n'
+        val += 'Duration in seconds: ' + str(self._duration) + '\n'
+        val += 'Error Message: ' + str(self._errmsg) + '\n'
+        return val
+
+
 class CILUploader(object):
     """Uploads and registers data with Cell Image Library"""
     def __init__(self, transfer_obj, resturl=None, restuser=None,
@@ -153,56 +247,86 @@ class CILUploader(object):
         """Uploads and registers data to CIL
         """
         if self._transfer is None:
-            logger.error('Transfer object was none, cannot complete transfer')
-            return 1
+            return CILUploaderResult(False,
+                                     errmsg='Transfer object was none, '
+                                     'cannot complete transfer')
 
         if self._url is None:
-            logger.error('Rest URL is None')
-            return 2
+            return CILUploaderResult(False,
+                                     errmsg='REST url is None')
 
         if self._user is None:
-            logger.error('Rest username is None')
-            return 3
+            return CILUploaderResult(False,
+                                     errmsg='REST username is None')
 
         if self._pass is None:
-            logger.error('Rest password is None')
-            return 4
+            return CILUploaderResult(False,
+                                     errmsg='REST password is None')
 
         if data is None:
-            logger.error('data is None')
-            return 5
+            return CILUploaderResult(False,
+                                     errmsg='File to transfer is None')
 
+        result = self._upload(data)
+
+        if result.get_success_status() is False:
+            return result
+
+        return self._register_data(result, session=session)
+
+    def _upload(self, data):
+        """Uploads data to remote server
+        :returns CILUploaderResult object with success set to True
+        """
         self._transfer.connect()
         (transfer_err_msg, duration,
          bytes_transferred) = self._transfer.transfer_file(data)
         self._transfer.disconnect()
 
         if transfer_err_msg is not None:
-            logger.error('Error trying to upload: ' + transfer_err_msg)
-            return 6
-        else:
-            logger.info(data + ' file took ' +
+            return CILUploaderResult(False,
+                                     errmsg='Error trying to upload: ' +
+                                     str(transfer_err_msg))
+
+        logger.info(data + ' file took ' +
                     str(duration) + ' seconds to transfer ' +
                     str(bytes_transferred) + ' bytes')
-            dest_f = os.path.join(self._transfer.get_destination_directory(),
-                                  os.path.basename(data))
-            close_session = False
-            if session is None:
-                close_session = True
-                session = requests.Session()
-            try:
-                r = session.post(self._url + '/upload_rest/upload_entry',
-                                 json={'File_path': dest_f},
-                                 auth=HTTPBasicAuth(self._user, self._pass))
-                logger.info(str(r))
-                logger.info(str(r.text))
-                logger.info(str(r.json()))
-                if r.status_code is 200:
-                    return 0
-                return 7
-            finally:
-                if close_session is True:
-                    session.close()
+        dest_f = os.path.join(self._transfer.get_destination_directory(),
+                              os.path.basename(data))
+        return CILUploaderResult(True, bytes_transferred=bytes_transferred,
+                                 duration=duration,
+                                 dest_path=dest_f)
+
+    def _register_data(self, result,
+                       session=None):
+
+        close_session = False
+        if session is None:
+            close_session = True
+            session = requests.Session()
+        try:
+            r = session.post(self._url + '/upload_rest/upload_entry',
+                             json={'File_path': result.get_destination_path()},
+                             auth=HTTPBasicAuth(self._user, self._pass))
+            success = False
+            if r.status_code is 200:
+                success = True
+                res_dict = json.loads(r.text)
+                if res_dict['success'] is  True:
+                    result.set_success_status(True)
+                    result.set_id(res_dict['ID'])
+                else:
+                    result.set_success_status(False)
+                    result.set_error_message('REST response: ' + r.text)
+            else:
+                result.set_error_message('REST returned error status code: ' +
+                                         str(r.status_code))
+            result.set_success_status(success)
+            return result
+
+        finally:
+            if close_session is True:
+                session.close()
 
 
 class CILUploaderFromConfigFactory(object):
@@ -351,14 +475,18 @@ class CILUploaderFromConfigFactory(object):
 def run(theargs):
     """Runs ciluploader
     """
-    sys.stdout.write("Hello from ciluploader\n")
     con,err = _get_and_verifyconfigparserconfig(theargs)
     if con is None:
         logger.error('No configuration: ' + str(err))
-        return 5
+        return 1
     fac = CILUploaderFromConfigFactory(con)
     uploader = fac.get_ciluploader()
     if uploader is not None:
-        return uploader.upload_and_register_data(theargs.data)
-
+        res = uploader.upload_and_register_data(theargs.data)
+        if res.get_error_message() is not None:
+            logger.error(res.get_error_message())
+        if res.get_success_status() is False:
+            return 2
+        sys.stdout.write(res.as_string() + '\n')
+        return 0
     return 3
