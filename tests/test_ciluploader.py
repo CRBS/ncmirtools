@@ -21,6 +21,7 @@ from ncmirtools import ciluploader
 from ncmirtools.config import NcmirToolsConfig
 from ncmirtools.ciluploader import CILUploaderFromConfigFactory
 from ncmirtools.ciluploader import CILUploader
+from ncmirtools.ciluploader import CILUploaderResult
 
 
 class Parameters(object):
@@ -127,28 +128,34 @@ class TestCILUploader(unittest.TestCase):
     def test_ciluploader_upload_and_register_data_no_invalid_params(self):
         uploader = CILUploader(None)
         res = uploader.upload_and_register_data('/foo')
-        self.assertEqual(res, 1)
+        self.assertEqual(res.get_success_status(), False)
+        self.assertEqual(res.get_error_message(), 'Transfer object was none, '
+                                                  'cannot complete transfer')
 
         uploader = CILUploader(Parameters(),restuser='foo',
                                restpassword='pass')
         res = uploader.upload_and_register_data('/foo')
-        self.assertEqual(res, 2)
+        self.assertEqual(res.get_success_status(), False)
+        self.assertEqual(res.get_error_message(), 'REST url is None')
 
         uploader = CILUploader(Parameters(), resturl='foo',
                                restpassword='pass')
         res = uploader.upload_and_register_data('/foo')
-        self.assertEqual(res, 3)
+        self.assertEqual(res.get_success_status(), False)
+        self.assertEqual(res.get_error_message(), 'REST username is None')
 
         uploader = CILUploader(Parameters(), restuser='foo',
                                resturl='pass')
         res = uploader.upload_and_register_data('/foo')
-        self.assertEqual(res, 4)
+        self.assertEqual(res.get_success_status(), False)
+        self.assertEqual(res.get_error_message(), 'REST password is None')
 
         uploader = CILUploader(Parameters(), restuser='foo',
                                resturl='ha',
                                restpassword='pass')
         res = uploader.upload_and_register_data(None)
-        self.assertEqual(res, 5)
+        self.assertEqual(res.get_success_status(), False)
+        self.assertEqual(res.get_error_message(), 'File to transfer is None')
 
     def test_ciluploader_upload_and_register_data_no_transfer_error(self):
         mock_trans = Parameters()
@@ -158,7 +165,9 @@ class TestCILUploader(unittest.TestCase):
         uploader = CILUploader(mock_trans,resturl='https://foo.com',
                                restuser='bob', restpassword='haha')
         res = uploader.upload_and_register_data('/foo')
-        self.assertEqual(res, 6)
+        self.assertEqual(res.get_success_status(), False)
+        self.assertEqual(res.get_error_message(), 'Error trying to upload: ' +
+                         'bad')
 
         mock_trans.connect.assert_called()
         mock_trans.disconnect.assert_called()
@@ -183,7 +192,9 @@ class TestCILUploader(unittest.TestCase):
 
         res = uploader.upload_and_register_data('/foo',
                                                 session=mock_sess)
-        self.assertEqual(res, 7)
+        self.assertEqual(res.get_success_status(), False)
+        self.assertEqual(res.get_error_message(), 'REST returned error status '
+                                                  'code: 404')
         mock_trans.get_destination_directory.assert_called()
 
     def test_ciluploader_upload_and_register_data_success(self):
@@ -194,8 +205,7 @@ class TestCILUploader(unittest.TestCase):
         mock_trans.disconnect = Mock()
 
         mockresp = Parameters()
-        mockresp.text = ''
-        mockresp.json = Mock(return_value='{"success":true,"ID":13}')
+        mockresp.text = '{"success":true,"ID":13}'
         mockresp.status_code = 200
         mock_sess = Parameters()
         mock_sess.post = Mock(return_value=mockresp)
@@ -205,8 +215,18 @@ class TestCILUploader(unittest.TestCase):
 
         res = uploader.upload_and_register_data('/foo',
                                                 session=mock_sess)
-        self.assertEqual(res, 0)
+        self.assertEqual(res.get_success_status(), True)
+        self.assertEqual(res.get_error_message(), None)
+        self.assertEqual(res.get_id(), 13)
         mock_trans.get_destination_directory.assert_called()
+
+        mockresp.text = '{"success":false}'
+        res = uploader.upload_and_register_data('/foo',
+                                                session=mock_sess)
+        self.assertEqual(res.get_success_status(), True)
+        self.assertEqual(res.get_error_message(),
+                         'REST response: {"success":false}')
+        self.assertEqual(res.get_id(), None)
 
     def test_ciluploader_upload_and_register_data_self_make_session(self):
         mock_trans = Parameters()
@@ -377,12 +397,39 @@ class TestCILUploader(unittest.TestCase):
             fac = CILUploaderFromConfigFactory(con)
             res = fac.get_ciluploader()
             self.assertTrue(isinstance(res, CILUploader))
-
-
-
-
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_ciluploader_result(self):
+        res = CILUploaderResult(None)
+        self.assertEqual(res.get_destination_path(), None)
+        self.assertEqual(res.get_error_message(), None)
+        self.assertEqual(res.get_id(), None)
+        self.assertEqual(res.get_success_status(), None)
+        self.assertEqual(res.get_duration(), None)
+
+        self.assertEqual(res.as_string(), 'Success: None\n'
+                                          'Id: None\n'
+                                          'Destination path: None\n'
+                                          'Bytes transferred: None\n'
+                                          'Duration in seconds: None\n'
+                                          'Error Message: None\n')
+
+        res = CILUploaderResult(True, errmsg='a',
+                                id=123, bytes_transferred=456,
+                                duration=1, dest_path='/foo')
+        self.assertEqual(res.get_destination_path(), '/foo')
+        self.assertEqual(res.get_error_message(), 'a')
+        self.assertEqual(res.get_id(), 123)
+        self.assertEqual(res.get_success_status(), True)
+        self.assertEqual(res.get_bytes_transferred(), 456)
+        self.assertEqual(res.get_duration(), 1)
+        self.assertEqual(res.as_string(), 'Success: True\n'
+                                          'Id: 123\n'
+                                          'Destination path: /foo\n'
+                                          'Bytes transferred: 456\n'
+                                          'Duration in seconds: 1\n'
+                                          'Error Message: a\n')
 
 
 if __name__ == '__main__':
