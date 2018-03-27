@@ -1,20 +1,16 @@
 #! /usr/bin/env python
 
-import os
 import sys
 import argparse
 import logging
 import ncmirtools
 
-from ncmirtools.config import NcmirToolsConfig
-from ncmirtools.config import ConfigMissingError
 from ncmirtools import config
 from ncmirtools import ciluploader
 
 
 # create logger
 logger = logging.getLogger('ncmirtools.ncmirtool')
-
 
 
 class Parameters(object):
