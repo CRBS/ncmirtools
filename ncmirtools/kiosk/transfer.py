@@ -156,7 +156,8 @@ class SftpTransfer(Transfer):
 
     def __init__(self, host, destdir, username=None,
                  port=22, privatekeyfile=None, connect_timeout=60,
-                 missing_host_key_policy=None):
+                 missing_host_key_policy=None,
+                 passphrase=None):
         """Constructor
         :param config: configparser.ConfigParser object set with
                        with values set as described in constructor
@@ -185,6 +186,7 @@ class SftpTransfer(Transfer):
         self._altssh = None
         self._ssh = None
         self._sftp = None
+        self._passphrase = passphrase
 
     def get_host(self):
         """Gets host
@@ -216,6 +218,11 @@ class SftpTransfer(Transfer):
         """
         return self._username
 
+    def get_passphrase(self):
+        """Gets passphrase
+        """
+        return self._passphrase
+
     def set_alternate_connection(self, altssh):
         """Sets alternate ssh connection
         :param altssh: Object that is paramiko.SSHClient or one that
@@ -240,6 +247,7 @@ class SftpTransfer(Transfer):
                           username=self._username,
                           pkey=self._pkey,
                           port=self._port,
+                          passphrase=self._passphrase,
                           timeout=self._connect_timeout)
         logger.info('Connection completed, took ' +
                     str(int(time.time()) - start_time) + ' seconds.')
