@@ -60,7 +60,7 @@ def get_argument_parser(subparsers):
 
          The configuration file should have values in this format:
 
-         [ciluploader]
+         [{config_sect}]
 
          {pkey}             = <path to private ssh key>
          {pkpass}  = <private ssh key passphrase>
@@ -82,6 +82,8 @@ def get_argument_parser(subparsers):
 
          Example:
 
+         [{config_sect}]
+
          {pkey}             = /home/foo/.ssh/mykey
          {pkpass}  = 12345
          {user}                = ciluploader
@@ -94,6 +96,7 @@ def get_argument_parser(subparsers):
 
     """.format(config_file=', '.join(con.get_config_files()),
                homedir=HOMEDIR_ARG,
+               config_sect=CILUploaderFromConfigFactory.CONFIG_SECTION,
                user=CILUploaderFromConfigFactory.USERNAME,
                host=CILUploaderFromConfigFactory.HOST,
                dest=CILUploaderFromConfigFactory.DEST_DIR,
