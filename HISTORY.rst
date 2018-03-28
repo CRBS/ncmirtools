@@ -2,6 +2,19 @@
 History
 =======
 
+0.5.0 (2018-03-28)
+------------------
+
+* Created prototype cilupload tool. 
+  Accessible via ncmirtool.py cilupload 
+  `Issue #17 <https://github.com/CRBS/ncmirtools/issues/17>`_
+
+* Created ncmirtool.py to prototype a single command line 
+  script entry point. 
+  `Issue #13 <https://github.com/CRBS/ncmirtools/issues/13>`_
+
+* Dropped support for Python 2.6
+
 0.4.0 (2017-06-28)
 ------------------
 
