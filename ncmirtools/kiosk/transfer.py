@@ -286,7 +286,7 @@ class SftpTransfer(Transfer):
             raise InvalidDestinationDirError('Destination directory '
                                              'cannot be None')
 
-        dest_file = os.path.join(self._destdir, os.path.basename(filepath))
+        dest_file = self._destdir + '/' + os.path.basename(filepath)
         logger.info('Uploading ' + str(filepath) + ' to ' + dest_file)
 
         transfer_err_msg = None
