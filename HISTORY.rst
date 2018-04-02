@@ -2,6 +2,13 @@
 History
 =======
 
+0.5.1 (2018-04-02)
+------------------
+
+* Set delimiter for uploads to / to deal with problem uploading
+  files from windows machine. 
+  `Issue #18 <https://github.com/CRBS/ncmirtools/issues/18>`_
+
 0.5.0 (2018-03-28)
 ------------------
 
