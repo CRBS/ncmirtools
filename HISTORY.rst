@@ -2,6 +2,12 @@
 History
 =======
 
+0.5.2 (2018-04-02)
+------------------
+
+* Another fix for Issue #18 where the path output to standard
+  out had incorrect path delimiter output.
+
 0.5.1 (2018-04-02)
 ------------------
 
