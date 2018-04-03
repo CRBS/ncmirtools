@@ -297,8 +297,9 @@ class CILUploader(object):
         logger.info(data + ' file took ' +
                     str(duration) + ' seconds to transfer ' +
                     str(bytes_transferred) + ' bytes')
-        dest_f = os.path.join(self._transfer.get_destination_directory(),
-                              os.path.basename(data))
+        dest_f = (self._transfer.get_destination_directory() + '/' +
+                  os.path.basename(data))
+
         return CILUploaderResult(True, bytes_transferred=bytes_transferred,
                                  duration=duration,
                                  dest_path=dest_f)
