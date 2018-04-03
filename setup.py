@@ -64,7 +64,7 @@ test_requirements = [
 
 setup(
     name='ncmirtools',
-    version='0.5.1',
+    version='0.5.2',
     description="Set of commandline tools for NCMIR",
     long_description=readme + '\n\n' + history,
     author="Christopher Churas",
