@@ -39,6 +39,8 @@ Tools
 
 * **imagetokiosk.py** -- Transfers second youngest image file to remote server via scp
 
+* **ncmirtool.py** -- New tool that will soon be the main entry point for all commands above. Currently offers prototype uploading of data to Cell Image Library (CIL)
+
 Dependencies
 ------------
 
